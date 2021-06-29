@@ -21,7 +21,6 @@ def main(args):
     fp = importlib.import_module(args.fit_params.split('.py')[0])
     gv_data = ld.load_h5(fp.data_file, fp.corr_lst)
 
-
     if args.states:
         states = args.states
     else:
@@ -58,7 +57,7 @@ def main(args):
             ax_meff[k].set_xlim(fp.corr_lst[k]['xlim'])
             ax_meff[k].set_ylim(fp.corr_lst[k]['ylim'])
             ax_meff[k].set_xlabel(r'$t/a$', fontsize=20)
-            ax_meff[k].set_ylabel(r'$m_{\rm eff}^{\rm %s}(t)$' %state, fontsize=20)
+            ax_meff[k].set_ylabel(r'$m_{\rm eff}^{\rm %s}(t)$' %k, fontsize=20)
             ax_meff[k].legend(fontsize=20)
 
             # z_eff
@@ -75,8 +74,18 @@ def main(args):
             ax_zeff[k].set_xlim(fp.corr_lst[k]['xlim'])
             ax_zeff[k].set_ylim(fp.corr_lst[k]['z_ylim'])
             ax_zeff[k].set_xlabel(r'$t/a$', fontsize=20)
-            ax_zeff[k].set_ylabel(r'$z_{\rm eff}^{\rm %s}(t)$' %state, fontsize=20)
+            ax_zeff[k].set_ylabel(r'$z_{\rm eff}^{\rm %s}(t)$' %k, fontsize=20)
             ax_zeff[k].legend(fontsize=20, loc=1)
+    # set up svdcut if added
+    if args.svdcut is not None:
+        svdcut = args.svdcut
+        has_svd=True
+    else:
+        try:
+            svdcut = fp.svdcut
+            has_svd=True
+        except:
+            has_svd=False
 
     if args.sweep:
         fit_funcs = cf.FitCorr()
@@ -114,7 +123,12 @@ def main(args):
                     for k in xx:
                         ''' NOTE  - we are chaning n_s for pi, D and Dpi all together '''
                         xx[k]['n_state'] = ns
-                    f_tmp = lsqfit.nonlinear_fit(data=(xx,y_tmp), prior=p, p0=p0, fcn=fit_funcs.fit_function)
+                    if has_svd:
+                        f_tmp = lsqfit.nonlinear_fit(data=(xx,y_tmp), prior=p, p0=p0,
+                                    fcn=fit_funcs.fit_function, svdcut=svdcut)
+                    else:
+                        f_tmp = lsqfit.nonlinear_fit(data=(xx,y_tmp), prior=p, p0=p0,
+                                    fcn=fit_funcs.fit_function)
                     fits[(ti,ns)] = f_tmp
             ylim=None
             if 'eff_ylim' in x_tmp[k]:
@@ -131,7 +145,11 @@ def main(args):
         for k in fit_lst:
             x_fit[k] = x[k]
 
-        fit = lsqfit.nonlinear_fit(data=(x_fit,y), prior=priors, p0=p0, fcn=fit_funcs.fit_function)
+        if has_svd:
+            fit = lsqfit.nonlinear_fit(data=(x_fit,y), prior=priors, p0=p0, fcn=fit_funcs.fit_function,
+                    svdcut=svdcut)
+        else:
+            fit = lsqfit.nonlinear_fit(data=(x_fit,y), prior=priors, p0=p0, fcn=fit_funcs.fit_function)
         if args.verbose_fit:
             print(fit.format(maxline=True))
         else:
@@ -214,7 +232,12 @@ def main(args):
                     for k in p_bs_mean:
                         p_bs[k] = gv.gvar(p_bs_mean[k][bs], priors[k].sdev)
                     # do the fit
-                    fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs, fcn=fit_funcs.fit_function)
+                    if has_svd:
+                        fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
+                                    fcn=fit_funcs.fit_function, svdcut=svdcut)
+                    else:
+                        fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
+                                    fcn=fit_funcs.fit_function)
                     for r in gs_bs:
                         if r in fit_bs.p:
                             gs_bs[r].append(fit_bs.p[r].mean)
@@ -245,6 +268,7 @@ if __name__ == "__main__":
     parser.add_argument('fit_params',    help='input file to specify fit')
     parser.add_argument('--fit',         default=False, action='store_true',
                         help=            'do fit? [%(default)s]')
+    parser.add_argument('--svdcut',      type=float, help='add svdcut to fit')
     parser.add_argument('--fold',        default=True, action='store_false',
                         help=            'fold data about T/2? [%(default)s]')
     parser.add_argument('--eff',         default=False, action='store_true',

@@ -39,8 +39,7 @@ class CorrFunction:
             z_src = p["%s_z%s_%d" %(x['state'], x['src'], n)]
             z_snk = p["%s_z%s_%d" %(x['state'], x['snk'], n)]
             E_n = self.En(x,p,n)
-            r += z_snk * z_src * np.exp(-E_n*t)
-            r += z_snk * z_src * np.exp(-E_n*(T-t))
+            r += z_snk * z_src * (np.exp(-E_n*t) + np.exp(-E_n*(T-t)) )
         return r
 
     def cosh_const(self, x, p):
