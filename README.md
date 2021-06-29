@@ -1,6 +1,6 @@
 # callat_corr_fitter
 
-This fitter requires
+This fitter requires Peter Lepage's libraries:
 - gvar
 - lsqfit
 
