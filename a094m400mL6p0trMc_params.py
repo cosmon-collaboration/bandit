@@ -7,7 +7,7 @@ fit_states = ['pion', 'proton']
 bs_seed = 'a094m400mL6.0trMc'
 
 # the pion data has a terrible condition number, ~e23
-#svdcut=5.e-6
+svdcut=5.e-6
 
 corr_lst = {
     # PROTON
