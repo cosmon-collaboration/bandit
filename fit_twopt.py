@@ -6,6 +6,7 @@ np.seterr(invalid='ignore')
 import copy
 #import tables as h5
 import h5py
+import importlib
 
 import gvar as gv
 import lsqfit
@@ -17,7 +18,7 @@ import corr_functions as cf
 import plotting as plot
 
 def main(args):
-    import fit_params as fp
+    fp = importlib.import_module(args.fit_params.split('.py')[0])
     gv_data = ld.load_h5(fp.data_file, fp.corr_lst)
 
 
@@ -241,6 +242,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Perform analysis of two-point correlation function')
+    parser.add_argument('fit_params',    help='input file to specify fit')
     parser.add_argument('--fit',         default=False, action='store_true',
                         help=            'do fit? [%(default)s]')
     parser.add_argument('--fold',        default=True, action='store_false',
