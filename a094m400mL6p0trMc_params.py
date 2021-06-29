@@ -54,7 +54,30 @@ corr_lst = {
         't_sweep'  :range(2,28),
         'n_sweep'  :range(1,6),
         'eff_ylim' :[0.185,0.2]
-    }
+    },
+    # OMEGA
+    'omega':{
+        'dsets':[
+            'spec/omega_m/nsq_0/spin_par_avg'
+            ],
+        'weights'  :[1.],
+        't_reverse':[False],
+        'phase'    :[1],
+        'fold'     :False,
+        'snks'     :['S', 'P'],
+        'srcs'     :['S'],
+        'xlim'     :[0,28.5],
+        'ylim'     :[0.55,0.8],
+        'colors'   :{'SS':'#70bf41','PS':'k'},
+        'type'     :'exp',
+        'ztype'    :'z_snk z_src',
+        'z_ylim'   :[0.,0.0045],
+        # fit params
+        'n_state'  :4,
+        't_range'  :np.arange(7,17),
+        't_sweep'  :range(2,16),
+        'n_sweep'  :range(1,6),
+    },
 }
 
 priors = gv.BufferDict()
@@ -67,6 +90,10 @@ priors['proton_zP_0'] = gv.gvar(2.8e-3, 0.75e-3)
 priors['pion_E_0']  = gv.gvar(0.195, .02)
 priors['pion_zS_0'] = gv.gvar(3.7e-4, 4e-5)
 priors['pion_zP_0'] = gv.gvar(0.26,  0.025)
+
+priors['omega_E_0']  = gv.gvar(0.7, .07)
+priors['omega_zS_0'] = gv.gvar(4.0e-7, 1.e-7)
+priors['omega_zP_0'] = gv.gvar(3.5e-3, 1.2e-3)
 
 for corr in corr_lst:
     for n in range(1,10):
