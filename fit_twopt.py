@@ -20,7 +20,6 @@ import plotting as plot
 def main(args):
     fp = importlib.import_module(args.fit_params.split('.py')[0])
     gv_data = ld.load_h5(fp.data_file, fp.corr_lst)
-
     if args.states:
         states = args.states
     else:
@@ -144,7 +143,7 @@ def main(args):
         fit_lst = [k for k in x if k.split('_')[0] in states]
         for k in fit_lst:
             x_fit[k] = x[k]
-
+        #import IPython; IPython.embed()
         if has_svd:
             fit = lsqfit.nonlinear_fit(data=(x_fit,y), prior=priors, p0=p0, fcn=fit_funcs.fit_function,
                     svdcut=svdcut)
@@ -274,7 +273,7 @@ if __name__ == "__main__":
     parser.add_argument('--eff',         default=False, action='store_true',
                         help=            'plot effective mass and z_eff data? [%(default)s]')
     parser.add_argument('--sweep',       nargs='+',
-                        help=            'perform sweep of t_min and n_state for specified states')
+                        help=            'specify states to perform t_min and n_state sweep')
     parser.add_argument('--states',      nargs='+', help='specify states to fit?')
     parser.add_argument('--verbose_fit', default=False, action='store_true',
                         help=            'print y vs f(x,p) also? [%(default)s]')

@@ -8,14 +8,15 @@ def effective_mass(gvdata, mtype='exp', tau=1):
         meff = 1./tau * np.log(gvdata / np.roll(gvdata,-tau))
     elif mtype == 'cosh':
         meff = 1./tau * np.arccosh((np.roll(gvdata,-tau)+np.roll(gvdata,tau))/2/gvdata)
-    return meff
+    # chop off last time slice for wrap-around effects
+    return meff[:-1]
 
 def plot_eff(ax, dsets, key, mtype='exp', tau=1, colors=None, offset=0):
     lst = [k for k in dsets if key in k]
     for k in lst:
         lbl = k.split('_')[1]
-        x   = np.arange(dsets[k].shape[0] + offset)
         eff = effective_mass(dsets[k], mtype=mtype, tau=tau)
+        x   = np.arange(eff.shape[0] + offset)
         m   = [k.mean for k in eff]
         dm  = [k.sdev for k in eff]
         if colors is not None:
@@ -51,10 +52,13 @@ def plot_zeff(ax, dsets, key, ztype='A_snk,src', snksrc=None, mtype='exp', tau=1
             lbl  = r'$z_{\rm %s}$' %snk
             eff  = effective_mass(dsets[k], mtype=mtype, tau=tau)
             t    = np.arange(eff.shape[0])
+
             if mtype=='exp':
-                zeff = np.exp(eff * t) * dsets[k]
+                zeff = np.exp(eff * t) * dsets[k][:-1]# we have to cut the final t-slice
             elif mtype=='cosh':
-                zeff = dsets[k] / (np.exp(-eff * t) + np.exp(-eff * (len(t)-t)))
+                zeff = dsets[k][:-1] / (np.exp(-eff * t) + np.exp(-eff * (len(t)-t)))
+            # we don't want the last entry (wrap around effects)
+            #zeff = zeff[:-1]
             if snk == src:
                 z  = [d.mean for d in np.sqrt(zeff)]
                 dz = [d.sdev for d in np.sqrt(zeff)]
@@ -62,9 +66,10 @@ def plot_zeff(ax, dsets, key, ztype='A_snk,src', snksrc=None, mtype='exp', tau=1
                 k2   = key+'_'+src+src
                 eff2 = effective_mass(dsets[k2], mtype=mtype, tau=tau)
                 if mtype=='exp':
-                    zeff2 = np.exp(eff*t) * dsets[k2]
+                    zeff2 = np.exp(eff*t) * dsets[k2][:-1]
                 elif mtype=='cosh':
-                    zeff2 = dsets[k2] / (np.exp(-eff * t) + np.exp(-eff * (len(t)-t)))
+                    zeff2 = dsets[k2][:-1] / (np.exp(-eff * t) + np.exp(-eff * (len(t)-t)))
+                #zeff2 = zeff2[:-1]
                 z     = [d.mean for d in zeff / np.sqrt(zeff2) ]
                 dz    = [d.sdev for d in zeff / np.sqrt(zeff2) ]
 
