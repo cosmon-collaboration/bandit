@@ -35,7 +35,6 @@ def main(args):
     priors = dict()
     for k in fp.priors:
         for state in states:
-
             k_n = int(k.split('_')[-1].split(')')[0])
             if state == k.split('(')[-1].split('_')[0] and k_n < n_states[state]:
                 priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
@@ -87,9 +86,7 @@ def main(args):
             has_svd=False
 
     if args.sweep:
-        fit_funcs = cf.FitCorr()
         p  = copy.deepcopy(fp.priors)
-        p0 = {k:v.mean for (k,v) in priors.items()}
 
         for state in args.sweep:
             if 't_sweep' in fp.corr_lst[state]:
@@ -109,28 +106,39 @@ def main(args):
             for ti in tmin:
                 for k in x_tmp:
                     x_tmp[k]['t_range'] = np.arange(ti,x[k]['t_range'][-1]+1)
-                xx = copy.deepcopy(x_tmp)
-                y_tmp = {k:v[xx[k]['t_range']] for (k,v) in gv_data.items() if k in x_tmp}
+
+                y_tmp = {k:v[x_tmp[k]['t_range']] for (k,v) in gv_data.items() if k in x_tmp}
                 for k in x_tmp:
                     if k.split('_')[0] not in states:
                         y_tmp.pop(k)
                 if ti == tmin[0]:
                     print([k for k in y_tmp])
                 for ns in n_states:
-                    sys.stdout.write('sweeping t_min = %d n_s = %d\r' %(ti,ns))
-                    sys.stdout.flush()
+                    xx = copy.deepcopy(x_tmp)
                     for k in xx:
                         ''' NOTE  - we are chaning n_s for pi, D and Dpi all together '''
                         xx[k]['n_state'] = ns
+                    fit_funcs = cf.FitCorr()
+                    p_sweep = {}
+                    for k in p:
+                        if int(k.split('_')[-1].split(')')[0]) < ns:
+                            p_sweep[k] = p[k]
+                    p0 = {k:v.mean for (k,v) in priors.items()}
+                    #print('t_min = %d  ns = %d' %(ti,ns))
+                    sys.stdout.write('sweeping t_min = %d n_s = %d\r' %(ti,ns))
+                    sys.stdout.flush()
                     if has_svd:
-                        f_tmp = lsqfit.nonlinear_fit(data=(xx,y_tmp), prior=p, p0=p0,
+                        f_tmp = lsqfit.nonlinear_fit(data=(xx,y_tmp),
+                                    prior=p_sweep, p0=p0,
                                     fcn=fit_funcs.fit_function, svdcut=svdcut)
                     else:
-                        f_tmp = lsqfit.nonlinear_fit(data=(xx,y_tmp), prior=p, p0=p0,
+                        f_tmp = lsqfit.nonlinear_fit(data=(xx,y_tmp),
+                                    prior=p_sweep, p0=p0,
                                     fcn=fit_funcs.fit_function)
                     fits[(ti,ns)] = f_tmp
+
             ylim=None
-            if 'eff_ylim' in x_tmp[k]:
+            if 'eff_ylim' in x_tmp[list(x_tmp.keys())[0]]:
                 ylim = x_tmp[k]['eff_ylim']
             plot.plot_stability(fits, tmin, n_states, tn_opt, state, ylim=ylim, save=args.save_figs)
         print('')
