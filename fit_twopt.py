@@ -140,7 +140,11 @@ def main(args):
             ylim=None
             if 'eff_ylim' in x_tmp[list(x_tmp.keys())[0]]:
                 ylim = x_tmp[k]['eff_ylim']
+            ylim=None
             plot.plot_stability(fits, tmin, n_states, tn_opt, state, ylim=ylim, save=args.save_figs)
+            if args.es_stability:
+                for i_n in range(1,n_states[-1]):
+                    plot.plot_stability(fits, tmin, n_states, tn_opt, state, ylim=ylim, save=args.save_figs,n_plot=i_n)
         print('')
 
     if args.fit:
@@ -282,6 +286,8 @@ if __name__ == "__main__":
                         help=            'plot effective mass and z_eff data? [%(default)s]')
     parser.add_argument('--sweep',       nargs='+',
                         help=            'specify states to perform t_min and n_state sweep')
+    parser.add_argument('--es_stability',default=False, action='store_true',
+                        help=            'plot excited state stability? [%(default)s]')
     parser.add_argument('--states',      nargs='+', help='specify states to fit?')
     parser.add_argument('--verbose_fit', default=False, action='store_true',
                         help=            'print y vs f(x,p) also? [%(default)s]')
