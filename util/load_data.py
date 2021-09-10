@@ -72,7 +72,7 @@ def load_h5(f5_file, corr_dict, return_gv=True):
                         corrs[corr+'_'+snk+src] = data[:,:,i,j] / data.mean(axis=0)[0,i,j]
                     else:
                         corrs[corr+'_'+snk+src] = data[:,:,i,j]
-                        
+
         else: # load individual corrs
             for i,snk in enumerate(corr_dict[corr]['snks']):
                 for j,src in enumerate(corr_dict[corr]['srcs']):
@@ -106,8 +106,10 @@ def load_h5(f5_file, corr_dict, return_gv=True):
                         data = 0.5*(data + time_reverse(data))
                     # normalize?
                     if 'normalize' in corr_dict[corr] and corr_dict[corr]['normalize']:
+                        #print('normalizing %s %s %s' %(corr,snk,src))
                         corrs[corr+'_'+snk+src] = data / data.mean(axis=0)[0]
                     else:
+                        #print('not normalizing %s %s %s' %(corr,snk,src))
                         corrs[corr+'_'+snk+src] = data
 
     # return correlators
