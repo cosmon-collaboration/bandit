@@ -28,7 +28,7 @@ def main(args):
     x = copy.deepcopy(fp.x)
     y = {k:v[x[k]['t_range']] for (k,v) in gv_data.items() if k.split('_')[0] in states}
     for k in y:
-        if x[k]['type'] == 'exp_r':
+        if 'exp_r' in x[k]['type']:
             sp = k.split('_')[-1]
             y[k] = y[k] / y[x[k]['denom'][0]+'_'+sp]
             y[k] = y[k] / y[x[k]['denom'][1]+'_'+sp]
@@ -54,7 +54,11 @@ def main(args):
             # m_eff
             fig   = plt.figure('m_'+k, figsize=(7,4))
             ax_meff[k]= plt.axes([0.15,0.15,0.84,0.84])
-            p = priors[k+'_E_0']
+            if 'exp_r' not in fp.corr_lst[k]['type']:
+                p = priors[k+'_E_0']
+            else:
+                d1,d2 = fp.corr_lst[k]['denom']
+                p = priors[d1+'_E_0'] + priors[d2+'_E_0'] + priors[k+'_dE_0_0']
             ax_meff[k].axhspan(p.mean-p.sdev, p.mean+p.sdev, color='k',alpha=.2)
             plot.plot_eff(ax_meff[k], gv_data, k, mtype=fp.corr_lst[k]['type'], colors=clrs)
             ax_meff[k].set_xlim(fp.corr_lst[k]['xlim'])
@@ -195,7 +199,7 @@ def main(args):
                 fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color=x_plot[k]['color'])
                 x_plot[k]['t_range'] = np.arange(x[k]['t_range'][-1]+.5,x[k]['t_range'][-1]+20.1,.1)
                 fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color='k', alpha=.1)
-                if x_plot[k]['type'] == 'exp_r':
+                if x_plot[k]['type'] in ['exp_r','exp_r_conspire']:
                     ax = ax_r[k.split('_')[0]]
                     x_plot[k]['t_range'] = np.arange(x[k]['t_range'][0],x[k]['t_range'][-1]+.1,.1)
                     x_plot[x_plot[k]['denom'][0]+'_'+sp]['t_range'] = x_plot[k]['t_range']
@@ -214,7 +218,7 @@ def main(args):
                 plt.savefig('figures/'+k+'_meff_ns'+n_s+'.pdf', transparent=True)
                 plt.figure('z_'+k)
                 plt.savefig('figures/'+k+'_zeff_ns'+n_s+'.pdf', transparent=True)
-                if fp.corr_lst[k]['type'] == 'exp_r':
+                if 'exp_r' in fp.corr_lst[k]['type']:
                     plt.figure('r_'+k)
                     plt.savefig('figures/'+k+'_ratio_meff_ns'+n_s+'.pdf', transparent=True)
 
