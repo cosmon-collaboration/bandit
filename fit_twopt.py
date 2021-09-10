@@ -27,6 +27,11 @@ def main(args):
 
     x = copy.deepcopy(fp.x)
     y = {k:v[x[k]['t_range']] for (k,v) in gv_data.items() if k.split('_')[0] in states}
+    for k in y:
+        if x[k]['type'] == 'exp_r':
+            sp = k.split('_')[-1]
+            y[k] = y[k] / y[x[k]['denom'][0]+'_'+sp]
+            y[k] = y[k] / y[x[k]['denom'][1]+'_'+sp]
     n_states = dict()
     for state in states:
         for k in x:
@@ -39,11 +44,11 @@ def main(args):
             if state == k.split('(')[-1].split('_')[0] and k_n < n_states[state]:
                 priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
 
-
     if args.eff:
         plt.ion()
         ax_meff = {}
         ax_zeff = {}
+        ax_r    = {}
         for k in states:
             clrs = fp.corr_lst[k]['colors']
             # m_eff
@@ -57,6 +62,20 @@ def main(args):
             ax_meff[k].set_xlabel(r'$t/a$', fontsize=20)
             ax_meff[k].set_ylabel(r'$m_{\rm eff}^{\rm %s}(t)$' %k, fontsize=20)
             ax_meff[k].legend(fontsize=20)
+
+            if 'denom' in fp.corr_lst[k]:
+                fig = plt.figure('r_'+k, figsize=(7,4))
+                ax_r[k] = plt.axes([0.15,0.15,0.84,0.84])
+                p = priors[k+'_dE_0_0']
+                ax_r[k].axhspan(p.mean-p.sdev, p.mean+p.sdev, color='k',alpha=.2)
+                plot.plot_eff(ax_r[k], gv_data, k, mtype=fp.corr_lst[k]['type'],
+                    colors=clrs, denom_key=fp.corr_lst[k]['denom'])
+                ax_r[k].set_xlim(fp.corr_lst[k]['xlim'])
+                #ax_r[k].set_ylim(fp.corr_lst[k]['ylim'])
+                ax_r[k].set_ylim(-.02,.02)
+                ax_r[k].set_xlabel(r'$t/a$', fontsize=20)
+                ax_r[k].set_ylabel(r'$m_{\rm eff}^{\rm %s}(t)$' %k, fontsize=20)
+                ax_r[k].legend(fontsize=20)
 
             # z_eff
             fig   = plt.figure('z_'+k, figsize=(7,4))
@@ -148,6 +167,7 @@ def main(args):
         print('')
 
     if args.fit:
+        #import IPython; IPython.embed()
         fit_funcs = cf.FitCorr()
         p0 = {k:v.mean for (k,v) in priors.items()}
         # only pass x for states in fit
@@ -169,17 +189,34 @@ def main(args):
         if args.eff:
             x_plot = copy.deepcopy(x_fit)
             for k in x_plot:
+                sp = k.split('_')[-1]
                 ax = ax_meff[k.split('_')[0]]
                 x_plot[k]['t_range'] = np.arange(x[k]['t_range'][0],x[k]['t_range'][-1]+.1,.1)
                 fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color=x_plot[k]['color'])
                 x_plot[k]['t_range'] = np.arange(x[k]['t_range'][-1]+.5,x[k]['t_range'][-1]+20.1,.1)
                 fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color='k', alpha=.1)
+                if x_plot[k]['type'] == 'exp_r':
+                    ax = ax_r[k.split('_')[0]]
+                    x_plot[k]['t_range'] = np.arange(x[k]['t_range'][0],x[k]['t_range'][-1]+.1,.1)
+                    x_plot[x_plot[k]['denom'][0]+'_'+sp]['t_range'] = x_plot[k]['t_range']
+                    x_plot[x_plot[k]['denom'][1]+'_'+sp]['t_range'] = x_plot[k]['t_range']
+                    d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp], x_plot[x_plot[k]['denom'][1]+'_'+sp]]
+                    fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color=x_plot[k]['color'], denom_x=d_x)
+                    x_plot[k]['t_range'] = np.arange(x[k]['t_range'][-1]+.5,x[k]['t_range'][-1]+20.1,.1)
+                    x_plot[x_plot[k]['denom'][0]+'_'+sp]['t_range'] = x_plot[k]['t_range']
+                    x_plot[x_plot[k]['denom'][1]+'_'+sp]['t_range'] = x_plot[k]['t_range']
+                    d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp], x_plot[x_plot[k]['denom'][1]+'_'+sp]]
+                    fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color='k', alpha=.1, denom_x=d_x)
         if args.save_figs:
             for k in states:
+                n_s = str(fp.corr_lst[k]['n_state'])
                 plt.figure('m_'+k)
-                plt.savefig('figures/'+k+'_meff.pdf', transparent=True)
+                plt.savefig('figures/'+k+'_meff_ns'+n_s+'.pdf', transparent=True)
                 plt.figure('z_'+k)
-                plt.savefig('figures/'+k+'_zeff.pdf', transparent=True)
+                plt.savefig('figures/'+k+'_zeff_ns'+n_s+'.pdf', transparent=True)
+                if fp.corr_lst[k]['type'] == 'exp_r':
+                    plt.figure('r_'+k)
+                    plt.savefig('figures/'+k+'_ratio_meff_ns'+n_s+'.pdf', transparent=True)
 
         if args.bs:
             # make sure results dir exists
