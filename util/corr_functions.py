@@ -139,7 +139,7 @@ class CorrFunction:
                 corr_p = self.cosh_const(xp,p)
                 corr_m = self.cosh_const(xm,p)
             meff = 1/tau * np.arccosh( (corr_p + corr_m) / 2 / corr )
-        elif x['type'] in ['exp','exp_r','exp_r_conspire']:
+        elif 'exp' in x['type']:
             if denom_x:
                 x0     = dict(denom_x[0])
                 x1     = dict(denom_x[1])
@@ -153,16 +153,21 @@ class CorrFunction:
                 elif x['type'] == 'exp_r_conspire':
                     corr   = self.two_h_conspire(x, p) / self.exp(x0,p) / self.exp(x1,p)
                     corr_p = self.two_h_conspire(xp,p) / self.exp(x0p,p) / self.exp(x1p,p)
+                elif x['type'] == 'exp_r_ind':
+                    corr   = self.exp(x,p)
+                    corr_p = self.exp(xp,p)
             elif x['type'] == 'exp_r':
                 corr   = self.two_h_ratio(x, p)
                 corr_p = self.two_h_ratio(xp,p)
             elif x['type'] == 'exp_r_conspire':
                 corr   = self.two_h_conspire(x, p)
                 corr_p = self.two_h_conspire(xp,p)
-            elif x['type'] in ['exp']:
+            elif x['type'] in ['exp','exp_r_ind']:
                 corr   = self.exp(x, p)
                 corr_p = self.exp(xp,p)
             meff = 1/tau * np.log( corr / corr_p )
+        else:
+            sys.exit('unrecognized type, %s' %x['type'])
 
         m  = np.array([k.mean for k in meff])
         dm = np.array([k.sdev for k in meff])
@@ -197,6 +202,8 @@ class FitCorr(object):
                 r[k] = self.corr_functions.cosh(x[k],p)
             elif x[k]['type'] == 'cosh_const':
                 r[k] = self.corr_functions.cosh_const(x[k],p)
+            elif x[k]['type'] == 'exp_r_ind':
+                r[k] = self.corr_functions.exp(x[k],p)
             elif x[k]['type'] == 'exp_r':
                 sp = k.split('_')[-1]
                 r[k] = self.corr_functions.two_h_ratio(x[k],p)

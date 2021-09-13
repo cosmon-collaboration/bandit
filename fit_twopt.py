@@ -30,8 +30,8 @@ def main(args):
     for k in y:
         if 'exp_r' in x[k]['type']:
             sp = k.split('_')[-1]
-            y[k] = y[k] / y[x[k]['denom'][0]+'_'+sp]
-            y[k] = y[k] / y[x[k]['denom'][1]+'_'+sp]
+            y[k] = y[k] / gv_data[x[k]['denom'][0]+'_'+sp][x[k]['t_range']]
+            y[k] = y[k] / gv_data[x[k]['denom'][1]+'_'+sp][x[k]['t_range']]
     n_states = dict()
     for state in states:
         for k in x:
@@ -54,7 +54,7 @@ def main(args):
             # m_eff
             fig   = plt.figure('m_'+k, figsize=(7,4))
             ax_meff[k]= plt.axes([0.15,0.15,0.84,0.84])
-            if 'exp_r' not in fp.corr_lst[k]['type']:
+            if fp.corr_lst[k]['type'] not in ['exp_r','exp_r_conspire']:
                 p = priors[k+'_E_0']
             else:
                 d1,d2 = fp.corr_lst[k]['denom']
@@ -70,7 +70,10 @@ def main(args):
             if 'denom' in fp.corr_lst[k]:
                 fig = plt.figure('r_'+k, figsize=(7,4))
                 ax_r[k] = plt.axes([0.15,0.15,0.84,0.84])
-                p = priors[k+'_dE_0_0']
+                if fp.corr_lst[k]['type'] == 'exp_r_ind':
+                    p = priors[k+'_E_0']
+                else:
+                    p = priors[k+'_dE_0_0']
                 ax_r[k].axhspan(p.mean-p.sdev, p.mean+p.sdev, color='k',alpha=.2)
                 plot.plot_eff(ax_r[k], gv_data, k, mtype=fp.corr_lst[k]['type'],
                     colors=clrs, denom_key=fp.corr_lst[k]['denom'])
@@ -199,18 +202,24 @@ def main(args):
                 fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color=x_plot[k]['color'])
                 x_plot[k]['t_range'] = np.arange(x[k]['t_range'][-1]+.5,x[k]['t_range'][-1]+20.1,.1)
                 fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color='k', alpha=.1)
-                if x_plot[k]['type'] in ['exp_r','exp_r_conspire']:
+                if 'exp_r' in x_plot[k]['type']:
                     ax = ax_r[k.split('_')[0]]
-                    x_plot[k]['t_range'] = np.arange(x[k]['t_range'][0],x[k]['t_range'][-1]+.1,.1)
-                    x_plot[x_plot[k]['denom'][0]+'_'+sp]['t_range'] = x_plot[k]['t_range']
-                    x_plot[x_plot[k]['denom'][1]+'_'+sp]['t_range'] = x_plot[k]['t_range']
-                    d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp], x_plot[x_plot[k]['denom'][1]+'_'+sp]]
-                    fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color=x_plot[k]['color'], denom_x=d_x)
-                    x_plot[k]['t_range'] = np.arange(x[k]['t_range'][-1]+.5,x[k]['t_range'][-1]+20.1,.1)
-                    x_plot[x_plot[k]['denom'][0]+'_'+sp]['t_range'] = x_plot[k]['t_range']
-                    x_plot[x_plot[k]['denom'][1]+'_'+sp]['t_range'] = x_plot[k]['t_range']
-                    d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp], x_plot[x_plot[k]['denom'][1]+'_'+sp]]
-                    fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color='k', alpha=.1, denom_x=d_x)
+                    if x_plot[k]['type'] in ['exp_r','exp_r_conspire']:
+                        x_plot[k]['t_range'] = np.arange(x[k]['t_range'][0],x[k]['t_range'][-1]+.1,.1)
+                        x_plot[x_plot[k]['denom'][0]+'_'+sp]['t_range'] = x_plot[k]['t_range']
+                        x_plot[x_plot[k]['denom'][1]+'_'+sp]['t_range'] = x_plot[k]['t_range']
+                        d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp], x_plot[x_plot[k]['denom'][1]+'_'+sp]]
+                        fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color=x_plot[k]['color'], denom_x=d_x)
+                        x_plot[k]['t_range'] = np.arange(x[k]['t_range'][-1]+.5,x[k]['t_range'][-1]+20.1,.1)
+                        x_plot[x_plot[k]['denom'][0]+'_'+sp]['t_range'] = x_plot[k]['t_range']
+                        x_plot[x_plot[k]['denom'][1]+'_'+sp]['t_range'] = x_plot[k]['t_range']
+                        d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp], x_plot[x_plot[k]['denom'][1]+'_'+sp]]
+                        fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color='k', alpha=.1, denom_x=d_x)
+                    else:
+                        x_plot[k]['t_range'] = np.arange(x[k]['t_range'][0],x[k]['t_range'][-1]+.1,.1)
+                        fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color=x_plot[k]['color'])
+                        x_plot[k]['t_range'] = np.arange(x[k]['t_range'][-1]+.5,x[k]['t_range'][-1]+20.1,.1)
+                        fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color='k', alpha=.1)
         if args.save_figs:
             for k in states:
                 n_s = str(fp.corr_lst[k]['n_state'])
