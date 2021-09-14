@@ -38,14 +38,14 @@ def plot_zeff(ax, dsets, key, ztype='A_snk,src', snksrc=None, mtype='exp', tau=1
             eff  = effective_mass(dsets[k], mtype=mtype, tau=tau)
             t    = np.arange(eff.shape[0])
             if 'exp' in mtype:
-                zeff = np.exp(eff * t) * dsets[k]
+                zeff = np.exp(eff * t) * dsets[k][:-1]
             elif mtype=='cosh':
-                zeff = dsets[k] / (np.exp(-eff * t) + np.exp(-eff * (len(t)-t)))
+                zeff = dsets[k][:-1] / (np.exp(-eff * t) + np.exp(-eff * (len(t)-t)))
             z    = [k.mean for k in zeff]
             dz   = [k.sdev for k in zeff]
             if colors is not None:
                 ax.errorbar(t, z, yerr=dz, linestyle='None', marker='o',
-                    color=colors[label], mfc='None', label=lbl)
+                    color=colors[lbl], mfc='None', label=lbl)
             else:
                 ax.errorbar(t, z, yerr=dz, linestyle='None', marker='o',
                     mfc='None', label=lbl)
@@ -84,7 +84,8 @@ def plot_zeff(ax, dsets, key, ztype='A_snk,src', snksrc=None, mtype='exp', tau=1
                 ax.errorbar(t, z, yerr=dz, linestyle='None', marker='o',
                     mfc='None', label=lbl)
 
-def plot_stability(fits, tmin, n_states, tn_opt, state, ylim=None, diff=False, save=True, n_plot=0):
+def plot_stability(fits, tmin, n_states, tn_opt, state,
+                    ylim=None, diff=False, save=True, n_plot=0, scale=None):
     fs = 20
     fs_ns = 16
     nn = str(n_plot)
@@ -104,9 +105,16 @@ def plot_stability(fits, tmin, n_states, tn_opt, state, ylim=None, diff=False, s
     markers[8] = '8'; colors[8] = 'darkred'
 
     fig   = plt.figure(state+'_E_'+nn+'_stability', figsize=(7,4))
-    ax_e0 = plt.axes([0.14,0.42,0.8 ,0.57])
-    ax_Q  = plt.axes([0.14,0.27,0.85,0.15])
-    ax_w  = plt.axes([0.14,0.12,0.85,0.15])
+    if scale:
+        ax_e0 = plt.axes([0.14,0.42,0.75 ,0.57])
+        ax_Q  = plt.axes([0.14,0.27,0.75,0.15])
+        ax_w  = plt.axes([0.14,0.12,0.75,0.15])
+        s     = float(scale[0])
+        units = scale[1]
+    else:
+        ax_e0 = plt.axes([0.14,0.42,0.85 ,0.57])
+        ax_Q  = plt.axes([0.14,0.27,0.85,0.15])
+        ax_w  = plt.axes([0.14,0.12,0.85,0.15])
 
     for ti in tmin:
         logGBF = []
@@ -178,11 +186,14 @@ def plot_stability(fits, tmin, n_states, tn_opt, state, ylim=None, diff=False, s
             ax_e0.axhline(e0_prior.mean-e0_prior.sdev,linestyle='--',color='k',alpha=.5)
             ax_e0.axhline(e0_prior.mean+e0_prior.sdev,linestyle='--',color='k',alpha=.5)
 
-    ax_e0r = ax_e0.twinx()
-    s = 1.378
-    ax_e0r.set_ylim(ax_e0.get_ylim()[0]*s, ax_e0.get_ylim()[1]*s)
-    ax_e0r.set_yticks([s*t for t in ax_e0.get_yticks()[1:-1]])
-    ax_e0r.set_yticklabels(["%.2f" %t for t in ax_e0r.get_yticks()])
+    if scale:
+        ax_e0r = ax_e0.twinx()
+        ax_e0r.set_ylim(ax_e0.get_ylim()[0]*s, ax_e0.get_ylim()[1]*s)
+        ax_e0r.set_yticks([s*t for t in ax_e0.get_yticks()[1:-1]])
+        if units in ['GeV','gev']:
+            ax_e0r.set_yticklabels(["%.2f" %t for t in ax_e0r.get_yticks()])
+        else:
+            ax_e0r.set_yticklabels(["%.0f" %t for t in ax_e0r.get_yticks()])
 
     #ax_e0.text(0.05,0.1, text, transform=ax_e0.transAxes,
     #    bbox={'facecolor':ens_colors[a_str],'boxstyle':'round'},

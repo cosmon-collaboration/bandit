@@ -53,7 +53,10 @@ def main(args):
             clrs = fp.corr_lst[k]['colors']
             # m_eff
             fig   = plt.figure('m_'+k, figsize=(7,4))
-            ax_meff[k]= plt.axes([0.15,0.15,0.84,0.84])
+            if args.scale:
+                ax_meff[k] = plt.axes([0.15,0.15,0.74,0.84])
+            else:
+                ax_meff[k] = plt.axes([0.15,0.15,0.84,0.84])
             if fp.corr_lst[k]['type'] not in ['exp_r','exp_r_conspire']:
                 p = priors[k+'_E_0']
             else:
@@ -111,10 +114,10 @@ def main(args):
         except:
             has_svd=False
 
-    if args.sweep:
+    if args.stability:
         p  = copy.deepcopy(fp.priors)
 
-        for state in args.sweep:
+        for state in args.stability:
             if 't_sweep' in fp.corr_lst[state]:
                 tmin = fp.corr_lst[state]['t_sweep']
             else:
@@ -170,7 +173,7 @@ def main(args):
             plot.plot_stability(fits, tmin, n_states, tn_opt, state, ylim=ylim, save=args.save_figs)
             if args.es_stability:
                 for i_n in range(1,n_states[-1]):
-                    plot.plot_stability(fits, tmin, n_states, tn_opt, state, ylim=ylim, save=args.save_figs,n_plot=i_n)
+                    plot.plot_stability(fits, tmin, n_states, tn_opt, state, ylim=ylim, save=args.save_figs,n_plot=i_n,scale=args.scale)
         print('')
 
     if args.fit:
@@ -220,6 +223,21 @@ def main(args):
                         fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color=x_plot[k]['color'])
                         x_plot[k]['t_range'] = np.arange(x[k]['t_range'][-1]+.5,x[k]['t_range'][-1]+20.1,.1)
                         fit_funcs.corr_functions.eff_mass(x_plot[k], fit.p, ax, color='k', alpha=.1)
+
+        if args.eff and args.scale:
+            for k in ax_meff:
+                s,units = float(args.scale[0]),args.scale[1]
+                axr = ax_meff[k].twinx()
+                print(k,ax_meff[k].get_ylim())
+                print(ax_meff[k].get_yticks())
+                axr.set_ylim(ax_meff[k].get_ylim()[0]*s, ax_meff[k].get_ylim()[1]*s)
+                axr.set_yticks([s*t for t in ax_meff[k].get_yticks()[:-1]])
+                if units in ['GeV','gev']:
+                    axr.set_yticklabels(["%.2f" %t for t in axr.get_yticks()])
+                else:
+                    axr.set_yticklabels(["%.0f" %t for t in axr.get_yticks()])
+                axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %(units), fontsize=20)
+
         if args.save_figs:
             for k in states:
                 n_s = str(fp.corr_lst[k]['n_state'])
@@ -334,7 +352,9 @@ if __name__ == "__main__":
                         help=            'fold data about T/2? [%(default)s]')
     parser.add_argument('--eff',         default=False, action='store_true',
                         help=            'plot effective mass and z_eff data? [%(default)s]')
-    parser.add_argument('--sweep',       nargs='+',
+    parser.add_argument('--scale',       default=None, nargs=2,
+                        help=            'add right axis with physical scale specified by input value [scale, units]')
+    parser.add_argument('--stability',   nargs='+',
                         help=            'specify states to perform t_min and n_state sweep')
     parser.add_argument('--es_stability',default=False, action='store_true',
                         help=            'plot excited state stability? [%(default)s]')
