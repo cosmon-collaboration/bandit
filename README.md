@@ -1,4 +1,4 @@
-# callat_corr_fitter
+# c51_corr_fitter
 
 This fitter requires Peter Lepage's libraries:
 - gvar
