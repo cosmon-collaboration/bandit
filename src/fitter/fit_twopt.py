@@ -1,4 +1,4 @@
-import os, sys, random
+import os, sys, pathlib, random
 import matplotlib.pyplot as plt
 import argparse
 import numpy as np
@@ -13,9 +13,9 @@ import lsqfit
 
 # user libs
 #sys.path.append('util')
-import fitter.util.load_data as ld
-import fitter.util.corr_functions as cf
-import fitter.util.plotting as plot
+import fitter.load_data as ld
+import fitter.corr_functions as cf
+import fitter.plotting as plot
 
 def main():
     parser = argparse.ArgumentParser(description='Perform analysis of two-point correlation function')
@@ -57,8 +57,10 @@ def main():
     if args.save_figs and not os.path.exists('figures'):
         os.makedirs('figures')
     print(args)
+    # add path to the input file and load it
+    sys.path.append(os.path.dirname(os.path.abspath(args.fit_params)))
+    fp = importlib.import_module(args.fit_params.split('/')[-1].split('.py')[0])
 
-    fp = importlib.import_module(args.fit_params.split('.py')[0])
     gv_data = ld.load_h5(fp.data_file, fp.corr_lst)
     if args.states:
         states = args.states
