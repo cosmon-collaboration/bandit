@@ -1,7 +1,10 @@
 [build-system]
 requires = [
-    "setuptools",
+    "setuptools >= 40.9.0",
+    "wheel",
     "numpy",
-    "scipy"
+    "scipy",
+    "gvar",
+    "lsqfit"
 ]
 build-backend = "setuptools.build_meta"

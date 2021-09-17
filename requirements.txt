@@ -1,5 +1,0 @@
-matplotlib
-tables
-h5py
-gvar
-lsqfit
