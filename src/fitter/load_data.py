@@ -7,8 +7,9 @@ import gvar as gv
 TIME REVERSE
 '''
 def time_reverse(corr, reverse=True, phase=1, time_axis=1):
-    ''' assumes time index is second of array '''
-    ''' assumes phase = +- 1 '''
+    ''' assumes time index is second of array
+        assumes phase = +- 1
+    '''
     if reverse:
         if len(corr.shape) > 1:
             cr = phase * np.roll(corr[:,::-1],1,axis=time_axis)
