@@ -1,4 +1,4 @@
-import os, sys, random
+import os, sys, pathlib, random
 import matplotlib.pyplot as plt
 import argparse
 import numpy as np
@@ -12,13 +12,55 @@ import gvar as gv
 import lsqfit
 
 # user libs
-sys.path.append('util')
-import load_data as ld
-import corr_functions as cf
-import plotting as plot
+#sys.path.append('util')
+import fitter.load_data as ld
+import fitter.corr_functions as cf
+import fitter.plotting as plot
 
-def main(args):
-    fp = importlib.import_module(args.fit_params.split('.py')[0])
+def main():
+    parser = argparse.ArgumentParser(description='Perform analysis of two-point correlation function')
+    parser.add_argument('fit_params',    help='input file to specify fit')
+    parser.add_argument('--fit',         default=False, action='store_true',
+                        help=            'do fit? [%(default)s]')
+    parser.add_argument('--svdcut',      type=float, help='add svdcut to fit')
+    parser.add_argument('--fold',        default=True, action='store_false',
+                        help=            'fold data about T/2? [%(default)s]')
+    parser.add_argument('--eff',         default=False, action='store_true',
+                        help=            'plot effective mass and z_eff data? [%(default)s]')
+    parser.add_argument('--scale',       default=None, nargs=2,
+                        help=            'add right axis with physical scale specified by input value [scale, units]')
+    parser.add_argument('--stability',   nargs='+',
+                        help=            'specify states to perform t_min and n_state sweep')
+    parser.add_argument('--es_stability',default=False, action='store_true',
+                        help=            'plot excited state stability? [%(default)s]')
+    parser.add_argument('--states',      nargs='+', help='specify states to fit?')
+    parser.add_argument('--verbose_fit', default=False, action='store_true',
+                        help=            'print y vs f(x,p) also? [%(default)s]')
+    parser.add_argument('--save_figs',   default=False, action='store_true',
+                        help=            'save figs? [%(default)s]')
+    parser.add_argument('--bs',          default=False, action='store_true',
+                        help=            'run bootstrap fit? [%(default)s]')
+    parser.add_argument('--Nbs',         type=int, default=2000,
+                        help=            'specify the number of BS samples to compute [%(default)s]')
+    parser.add_argument('--bs_seed',     default='None',
+                        help=            'set a string to seed the bootstrap - None will be random [%(default)s]')
+    parser.add_argument('--bs_results',  default='bs_results/spectrum_bs.h5',
+                        help=            'set file to write bootstrap results [%(default)s]')
+    parser.add_argument('--overwrite',   default=False, action='store_true',
+                        help=            'overwrite existing bootstrap results? [%(default)s]')
+    parser.add_argument('--bs_path',     default='spec',
+                        help=            'specify path in h5 file for bs results')
+    parser.add_argument('--interact',    default=False, action='store_true',
+                        help=            'open IPython instance after to interact with results? [%(default)s]')
+
+    args = parser.parse_args()
+    if args.save_figs and not os.path.exists('figures'):
+        os.makedirs('figures')
+    print(args)
+    # add path to the input file and load it
+    sys.path.append(os.path.dirname(os.path.abspath(args.fit_params)))
+    fp = importlib.import_module(args.fit_params.split('/')[-1].split('.py')[0])
+
     gv_data = ld.load_h5(fp.data_file, fp.corr_lst)
     if args.states:
         states = args.states
@@ -343,43 +385,4 @@ def main(args):
     plt.show()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Perform analysis of two-point correlation function')
-    parser.add_argument('fit_params',    help='input file to specify fit')
-    parser.add_argument('--fit',         default=False, action='store_true',
-                        help=            'do fit? [%(default)s]')
-    parser.add_argument('--svdcut',      type=float, help='add svdcut to fit')
-    parser.add_argument('--fold',        default=True, action='store_false',
-                        help=            'fold data about T/2? [%(default)s]')
-    parser.add_argument('--eff',         default=False, action='store_true',
-                        help=            'plot effective mass and z_eff data? [%(default)s]')
-    parser.add_argument('--scale',       default=None, nargs=2,
-                        help=            'add right axis with physical scale specified by input value [scale, units]')
-    parser.add_argument('--stability',   nargs='+',
-                        help=            'specify states to perform t_min and n_state sweep')
-    parser.add_argument('--es_stability',default=False, action='store_true',
-                        help=            'plot excited state stability? [%(default)s]')
-    parser.add_argument('--states',      nargs='+', help='specify states to fit?')
-    parser.add_argument('--verbose_fit', default=False, action='store_true',
-                        help=            'print y vs f(x,p) also? [%(default)s]')
-    parser.add_argument('--save_figs',   default=False, action='store_true',
-                        help=            'save figs? [%(default)s]')
-    parser.add_argument('--bs',          default=False, action='store_true',
-                        help=            'run bootstrap fit? [%(default)s]')
-    parser.add_argument('--Nbs',         type=int, default=2000,
-                        help=            'specify the number of BS samples to compute [%(default)s]')
-    parser.add_argument('--bs_seed',     default='None',
-                        help=            'set a string to seed the bootstrap - None will be random [%(default)s]')
-    parser.add_argument('--bs_results',  default='bs_results/spectrum_bs.h5',
-                        help=            'set file to write bootstrap results [%(default)s]')
-    parser.add_argument('--overwrite',   default=False, action='store_true',
-                        help=            'overwrite existing bootstrap results? [%(default)s]')
-    parser.add_argument('--bs_path',     default='spec',
-                        help=            'specify path in h5 file for bs results')
-    parser.add_argument('--interact',    default=False, action='store_true',
-                        help=            'open IPython instance after to interact with results? [%(default)s]')
-
-    args = parser.parse_args()
-    if args.save_figs and not os.path.exists('figures'):
-        os.makedirs('figures')
-    print(args)
-    main(args)
+    main()
