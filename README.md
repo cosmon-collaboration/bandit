@@ -26,6 +26,12 @@ which fit_twopt
 ```
 and if this returns a binary, the installation has worked.
 
+When the code is updated, to re-install the new features, one can simple go to the root source dir and re-install
+```
+cd <path_to_repo>/c51_corr_fitter
+pip install -e .
+```
+
 
 
 
