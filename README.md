@@ -18,13 +18,13 @@ conda activate bare3.8
 [rest of the install]
 git clone https://github.com/callat-qcd/c51_corr_fitter
 cd c51_corr_fitter
-pip install -e .
+pip install -e . 
 ```
 This will result in an installation that claims there are pip install errors, but in practice, the installation works.  To test success, type
 ```
 which fit_twopt
 ```
-and if this returns a binary, the installation has worked.
+and if this returns a binary, the installation has worked.   If you do not have an anaconda install, or virtual env, you can add "--user" at the end of the pip install to install the binary in the `$HOME/.local` location to keep it isolated from the rest of your python site-packages, if desired.
 
 When the code is updated, to re-install the new features, one can simple go to the root source dir and re-install
 ```
