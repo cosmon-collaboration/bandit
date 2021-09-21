@@ -1,37 +1,41 @@
 # c51_corr_fitter
+This fitter is designed to analyze correlation functions generated from lattice QFT calculations.  This fitting package is currently undergoing rapid development, and there is no promise of backwards compatibility yet.  Version numbers will be used to support reproducibility.
 
-This fitter requires Peter Lepage's libraries:
-- gvar
-- lsqfit
+- [Installation](#installation)
+- [Example Usage](#example-usage)
+- [Input File Description](#input-file-info)
 
-both of which can be `pip install`'ed'.
+## Installation
+This package requires the [lsqfit](https://github.com/gplepage/lsqfit) and [gvar](https://github.com/gplepage/gvar) libraries developed by Peter Lepage.
 
-Two example fit_param files are included
-- a094m400mL6p0trMc_params.py
-- a12m220XL_params.py
+This package is now locally pip-installable in `editable` mode (which means, you can actively develop the code and re-install quickly).  Tested locally with a clean anaconda installation, the following works for installing on a mac OS at least.
 
-The first is from the OpenLat Stabilised Wilson Fermion runs and the latter is from a CalLat project.  Each file indicates the name of the data file to be used in the analysis.
-
-The idea for building up a fit is one first would make effective mass plots to estimate the priors for the ground state values
 ```
-python3 fit_twopt.py a094m400mL6p0trMc_params.py --eff
-```
-which will create `m_eff` and `z_eff` plots assuming a factorized model of the correlation function
-```
-C(t) = sum_n zsnk_n zsrc_n exp(-E_n t)
-```
-There are many desirable features that will be added as we add more complexity to the fit models and more types of correlation functions.
+[skip these steps unless you want to test a "clean" install]
+conda create -n bare3.8 python=3.8
+conda activate bare3.8
 
-To perform the correlated fit, one runs
+[rest of the install]
+git clone https://github.com/callat-qcd/c51_corr_fitter
+cd c51_corr_fitter
+pip install -e .
 ```
-python3 fit_twopt.py a094m400mL6p0trMc_params.py --eff --fit [--states proton omega ...]
+This will result in an installation that claims there are pip install errors, but in practice, the installation works.  To test success, type
 ```
-where the `states` are specified in the input file but can be overridden in the command line.  A sweep over `t_min` and `n_states` can be performed also
+which fit_twopt
 ```
-python3 fit_twopt.py a094m400mL6p0trMc_params.py --eff --fit --sweep proton pion
-```
-If the data has a bad condition number in the covariance matrix, one can specify an SVD cut either in the command line or in the input file.
+and if this returns a binary, the installation has worked.
 
 
 
-A more extensive readme will be updated as users debug the interface and more features are added.
+
+## Example Usage
+
+To build up a fit, one usually looks at effective mass plots etc., and starts to guess the input ground state energy and overlap factors.  With a working installation, you should be able (from the source directory) do
+```
+cd tests
+fit_twopt input_file/callat_a12m220XL_test_params.py --eff --fit
+```
+which will generate effective mass plots and perform the fit of the states specified in the input file.
+
+## Input File Info
