@@ -61,7 +61,7 @@ def main():
     sys.path.append(os.path.dirname(os.path.abspath(args.fit_params)))
     fp = importlib.import_module(args.fit_params.split('/')[-1].split('.py')[0])
 
-    gv_data = ld.load_h5(fp.data_file, fp.corr_lst)
+    gv_data = ld.load_h5(fp.data_files, fp.reweight_files, fp.corr_lst)
     if args.states:
         states = args.states
     else:
@@ -316,7 +316,7 @@ def main():
                     p0_bs[k] = fit.p[k].mean
 
                 # load the data
-                corr_data = ld.load_h5(fp.data_file, fp.corr_lst, return_gv=False)
+                corr_data = ld.load_h5(fp.data_files, fp.reweight_files, fp.corr_lst, return_gv=False)
                 Ncfg = corr_data[list(corr_data.keys())[0]].shape[0]
 
                 # seed the random number generator
