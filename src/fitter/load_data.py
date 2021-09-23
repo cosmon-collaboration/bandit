@@ -21,19 +21,12 @@ def time_reverse(corr, reverse=True, phase=1, time_axis=1):
         cr = phase * corr
     return cr
 
-def load_h5(f5_file, corr_dict, return_gv=True):
+def load_h5(f5_files, reweight_files, corr_dict, return_gv=True):
     corrs = gv.BufferDict()
-
-    # check if f5_file is list
-    if not isinstance(f5_file, list):
-        f5_files = [f5_file]
-    else:
-        f5_files = f5_file
 
     # collect correlators
     for corr in corr_dict:
         dsets     = corr_dict[corr]['dsets']
-        weights   = corr_dict[corr]['weights']
         t_reverse = corr_dict[corr]['t_reverse']
         # check if data is in an array or single correlators
         if 'corr_array' not in corr_dict[corr]:
@@ -44,6 +37,11 @@ def load_h5(f5_file, corr_dict, return_gv=True):
             # get first data
             with h5.open_file(f5_files[0],'r') as f5:
                 data = np.zeros_like(f5.get_node('/'+dsets[0]).read())
+                if reweight_files:
+                    with h5.open_file(reweight_files[0],'r') as rw_f5:
+                        weights = rw_f5.get_node('/reweighting-factors').read()
+                else:
+                    weights = np.ones(data.shape[0])
                 for i_d,dset in enumerate(dsets):
                     if 'phase' in corr_dict[corr]:
                         phase = corr_dict[corr]['phase'][i_d]
@@ -55,6 +53,11 @@ def load_h5(f5_file, corr_dict, return_gv=True):
                 for f_i in range(1,len(f5_files)):
                     with h5.open_file(f5_files[f_i],'r') as f5:
                         tmp = np.zeros_like(f5.get_node('/'+dsets[0]).read())
+                        if reweight_files:
+                            with h5.open_file(reweight_files[0],'r') as rw_f5:
+                                weights = rw_f5.get_node('/reweighting-factors').read()
+                        else:
+                            weights = np.ones(tmp.shape[0])
                         for i_d,dset in enumerate(dsets):
                             if 'phase' in corr_dict[corr]:
                                 phase = corr_dict[corr]['phase'][i_d]

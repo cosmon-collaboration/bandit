@@ -1,7 +1,8 @@
 import gvar as gv
 import numpy as np
 
-data_file = 'data/callat_a12m220XL_test.h5'
+data_files = ['data/callat_a12m220XL_test.h5']
+reweight_files = []
 
 fit_states = ['pion', 'proton']
 bs_seed = 'a12m220XL'

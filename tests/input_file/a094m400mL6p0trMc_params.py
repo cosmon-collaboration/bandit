@@ -1,7 +1,8 @@
 import gvar as gv
 import numpy as np
 
-data_file = 'data/a094m400mL6.0trMc_cfgs5-105_srcs0-15.h5'
+data_files = ['data/a094m400mL6.0trMc_cfgs5-105_srcs0-15.h5']
+reweight_files = ['data/weights/a094m400mL6.0trMc_cfgs5-105.h5']
 
 fit_states = ['pion', 'proton']
 bs_seed = 'a094m400mL6.0trMc'
