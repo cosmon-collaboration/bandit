@@ -38,7 +38,8 @@ def load_h5(f5_files, reweight_files, corr_dict, return_gv=True):
             with h5.open_file(f5_files[0],'r') as f5:
                 data = np.zeros_like(f5.get_node('/'+dsets[0]).read())
                 if reweight_files:
-                    weights = np.loadtxt(reweight_files[0], skiprows=16)[:,3]
+                    with h5.open_file(reweight_files[0],'r') as rw_f5:
+                        weights = rw_f5.get_node('/reweighting-factors').read()
                 else:
                     weights = np.ones(data.shape[0])
                 for i_d,dset in enumerate(dsets):
@@ -53,7 +54,8 @@ def load_h5(f5_files, reweight_files, corr_dict, return_gv=True):
                     with h5.open_file(f5_files[f_i],'r') as f5:
                         tmp = np.zeros_like(f5.get_node('/'+dsets[0]).read())
                         if reweight_files:
-                            weights = np.loadtxt(reweight_files[f_i], skiprows=16)[:,3]
+                            with h5.open_file(reweight_files[0],'r') as rw_f5:
+                                weights = rw_f5.get_node('/reweighting-factors').read()
                         else:
                             weights = np.ones(tmp.shape[0])
                         for i_d,dset in enumerate(dsets):
