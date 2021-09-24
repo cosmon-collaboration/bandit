@@ -42,6 +42,6 @@ To build up a fit, one usually looks at effective mass plots etc., and starts to
 cd tests
 fit_twopt input_file/callat_a12m220XL_test_params.py --eff --fit
 ```
-which will generate effective mass plots and perform the fit of the states specified in the input file.
+which will generate effective mass plots and perform the fit of the states specified in the input file which is included in the `tests/data` directory.
 
 ## Input File Info

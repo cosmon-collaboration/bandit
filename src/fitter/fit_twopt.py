@@ -61,7 +61,17 @@ def main():
     sys.path.append(os.path.dirname(os.path.abspath(args.fit_params)))
     fp = importlib.import_module(args.fit_params.split('/')[-1].split('.py')[0])
 
-    gv_data = ld.load_h5(fp.data_file, fp.corr_lst)
+    # re-weight correlators?
+    try:
+        reweight = fp.reweight
+    except:
+        reweight = False
+    if reweight:
+        rw_files = fp.rw_files
+        rw_path  = fp.rw_path
+        gv_data = ld.load_h5(fp.data_file, fp.corr_lst, rw=[rw_files,rw_path])
+    else:
+        gv_data = ld.load_h5(fp.data_file, fp.corr_lst)
     if args.states:
         states = args.states
     else:
