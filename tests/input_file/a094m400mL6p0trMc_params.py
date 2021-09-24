@@ -2,8 +2,11 @@ import gvar as gv
 import numpy as np
 
 data_file = 'data/a094m400mL6.0trMc_cfgs5-105_srcs0-15.h5'
+reweight  = True
+rw_files  = 'data/a094m400mL6.0trMc_cfgs5-105.h5'
+rw_path   = 'reweighting-factors'
 
-fit_states = ['pion', 'proton']
+fit_states = ['pion', 'proton', 'omega']
 bs_seed = 'a094m400mL6.0trMc'
 
 # the pion data has a terrible condition number, ~e23
@@ -12,13 +15,12 @@ svdcut=5.e-6
 corr_lst = {
     # PROTON
     'proton':{
-        'dsets':[
-            'spec/proton/nsq_0/spin_par_avg'
-            ],
+        'dsets'    :['spec/proton/nsq_0/spin_par_avg'],
         'weights'  :[1.],
         't_reverse':[False],
         'phase'    :[1],
         'fold'     :False,
+        'normalize':True,
         'snks'     :['S', 'P'],
         'srcs'     :['S'],
         'xlim'     :[0,28.5],
@@ -26,7 +28,7 @@ corr_lst = {
         'colors'   :{'SS':'#70bf41','PS':'k'},
         'type'     :'exp',
         'ztype'    :'z_snk z_src',
-        'z_ylim'   :[0.,0.0045],
+        'z_ylim'   :[0.,.1],
         # fit params
         'n_state'  :4,
         't_range'  :np.arange(7,17),
@@ -39,6 +41,7 @@ corr_lst = {
         'weights'  :[1],
         't_reverse':[False],
         'fold'     :True,
+        'normalize':True,
         'snks'     :['S', 'P'],
         'srcs'     :['S'],
         'xlim'     :[0,48.5],
@@ -46,7 +49,7 @@ corr_lst = {
         'colors'   :{'SS':'#70bf41','PS':'k'},
         'type'     :'cosh',
         'ztype'    :'z_snk z_src',
-        'z_ylim'   :[0.0,0.32],
+        'z_ylim'   :[0.0,.1],
         # fit params
         'n_state'  :3,
         'T'        :96,
@@ -64,6 +67,7 @@ corr_lst = {
         't_reverse':[False],
         'phase'    :[1],
         'fold'     :False,
+        'normalize':True,
         'snks'     :['S', 'P'],
         'srcs'     :['S'],
         'xlim'     :[0,28.5],
@@ -71,7 +75,7 @@ corr_lst = {
         'colors'   :{'SS':'#70bf41','PS':'k'},
         'type'     :'exp',
         'ztype'    :'z_snk z_src',
-        'z_ylim'   :[0.,0.0045],
+        'z_ylim'   :[0.,.1],
         # fit params
         'n_state'  :4,
         't_range'  :np.arange(7,17),
@@ -84,16 +88,16 @@ priors = gv.BufferDict()
 x      = dict()
 
 priors['proton_E_0']  = gv.gvar(0.56, .06)
-priors['proton_zS_0'] = gv.gvar(2.3e-7, 5.e-8)
-priors['proton_zP_0'] = gv.gvar(2.8e-3, 0.75e-3)
+priors['proton_zS_0'] = gv.gvar(.04, .01)
+priors['proton_zP_0'] = gv.gvar(.025, .01)
 
 priors['pion_E_0']  = gv.gvar(0.195, .02)
-priors['pion_zS_0'] = gv.gvar(3.7e-4, 4e-5)
-priors['pion_zP_0'] = gv.gvar(0.26,  0.025)
+priors['pion_zS_0'] = gv.gvar(0.07, 0.01)
+priors['pion_zP_0'] = gv.gvar(0.07, 0.01)
 
 priors['omega_E_0']  = gv.gvar(0.7, .07)
-priors['omega_zS_0'] = gv.gvar(4.0e-7, 1.e-7)
-priors['omega_zP_0'] = gv.gvar(3.5e-3, 1.2e-3)
+priors['omega_zS_0'] = gv.gvar(.035, .01)
+priors['omega_zP_0'] = gv.gvar(.02, .01)
 
 for corr in corr_lst:
     for n in range(1,10):
