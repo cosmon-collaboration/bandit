@@ -1,6 +1,7 @@
 import tables as h5
 import numpy as np
 import gvar as gv
+import sys
 
 
 '''
@@ -21,7 +22,7 @@ def time_reverse(corr, reverse=True, phase=1, time_axis=1):
         cr = phase * corr
     return cr
 
-def load_h5(f5_file, corr_dict, return_gv=True):
+def load_h5(f5_file, corr_dict, return_gv=True, rw=None):
     corrs = gv.BufferDict()
 
     # check if f5_file is list
@@ -29,6 +30,22 @@ def load_h5(f5_file, corr_dict, return_gv=True):
         f5_files = [f5_file]
     else:
         f5_files = f5_file
+    # check for re-weighting
+    if rw:
+        rw_file, rw_path = rw
+        if not isinstance(rw_file, list):
+            rw_files = [rw_file]
+        else:
+            rw_files = rw_files
+        if len(rw_files) != len(f5_files):
+            sys.exit('You must supply the same number of re-weighting files as data files')
+        with h5.open_file(rw_files[0],'r') as rw5:
+            reweight = rw5.get_node('/'+rw_path).read()
+        for f_i in range(1,len(f5_files)):
+            with h5.open_file(rw_files[f_i],'r') as rw5:
+                reweight = np.concatenate((reweight,rw5.get_node('/'+rw_path).read()),axis=0)
+        # normalize rw factors
+        reweight = reweight / reweight.sum()
 
     # collect correlators
     for corr in corr_dict:
@@ -50,6 +67,7 @@ def load_h5(f5_file, corr_dict, return_gv=True):
                     else: phase=1
                     d_tmp = f5.get_node('/'+dset).read()
                     data += weights[i_d] * time_reverse(d_tmp,reverse=t_reverse[i_d], phase=phase)
+
             # if we have more than 1 data file
             if len(f5_files) > 1:
                 for f_i in range(1,len(f5_files)):
@@ -63,6 +81,7 @@ def load_h5(f5_file, corr_dict, return_gv=True):
                             tmp  += weights[i_d] * time_reverse(d_tmp,reverse=t_reverse[i_d], phase=phase)
                         # NOTE - we assume the cfg axis == 0
                         data = np.concatenate((data,tmp),axis=0)
+
             # if fold
             if corr_dict[corr]['fold']:
                 data = 0.5*(data + time_reverse(data))
@@ -112,6 +131,11 @@ def load_h5(f5_file, corr_dict, return_gv=True):
                     else:
                         #print('not normalizing %s %s %s' %(corr,snk,src))
                         corrs[corr+'_'+snk+src] = data
+
+    # re-weight?
+    if rw:
+        for k in corrs:
+            corrs[k] = corrs[k] * reweight[:, None]
 
     # return correlators
     if return_gv:
