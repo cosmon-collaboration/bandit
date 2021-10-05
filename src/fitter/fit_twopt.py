@@ -252,7 +252,7 @@ def main():
 
         if args.gui:
             from lsqfitgui import run_server
-            run_server(fit)
+            run_server(fit, name="c51 Two-Point Fitter")
 
         if args.eff:
             x_plot = copy.deepcopy(x_fit)
