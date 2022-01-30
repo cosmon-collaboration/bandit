@@ -50,6 +50,10 @@ def main():
                         help=            'overwrite existing bootstrap results? [%(default)s]')
     parser.add_argument('--bs_path',     default='spec',
                         help=            'specify path in h5 file for bs results')
+    parser.add_argument('--uncorr_corrs',default=False, action='store_true',
+                        help=            'uncorrelate different correlation functions? [%(default)s]')
+    parser.add_argument('--uncorr_all',  default=False, action='store_true',
+                        help=            'uncorrelate all snk,src for each correlation function? [%(default)s]')
     parser.add_argument('--interact',    default=False, action='store_true',
                         help=            'open IPython instance after to interact with results? [%(default)s]')
 
@@ -61,6 +65,9 @@ def main():
     sys.path.append(os.path.dirname(os.path.abspath(args.fit_params)))
     fp = importlib.import_module(args.fit_params.split('/')[-1].split('.py')[0])
 
+    # can only uncorrelate all or sets of corrs
+    if args.uncorr_all and args.uncorr_corrs:
+        sys.exit('you can only select uncorr_corrs or uncorr_all')
     # re-weight correlators?
     try:
         reweight = fp.reweight
@@ -69,9 +76,11 @@ def main():
     if reweight:
         rw_files = fp.rw_files
         rw_path  = fp.rw_path
-        gv_data = ld.load_h5(fp.data_file, fp.corr_lst, rw=[rw_files,rw_path])
+        gv_data = ld.load_h5(fp.data_file, fp.corr_lst, rw=[rw_files,rw_path],
+                        uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all)
     else:
-        gv_data = ld.load_h5(fp.data_file, fp.corr_lst)
+        gv_data = ld.load_h5(fp.data_file, fp.corr_lst,
+                        uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all)
     if args.states:
         states = args.states
     else:
@@ -146,9 +155,9 @@ def main():
             mtype  = fp.corr_lst[k]['type']
             ztype  = fp.corr_lst[k]['ztype']
             # this zeff prior is not generic yet
-            for z in fp.corr_lst[k]['snks']:
-                p = priors[k+'_z'+z+'_0']
-                ax_zeff[k].axhspan(p.mean-p.sdev, p.mean+p.sdev, color='k',alpha=.2)
+            #for z in fp.corr_lst[k]['snks']:
+            #    p = priors[k+'_z'+z+'_0']
+            #    ax_zeff[k].axhspan(p.mean-p.sdev, p.mean+p.sdev, color='k',alpha=.2)
             plot.plot_zeff(ax_zeff[k], gv_data, k, ztype=ztype, mtype=mtype, snksrc=snksrc, colors=clrs)
             ax_zeff[k].set_xlim(fp.corr_lst[k]['xlim'])
             ax_zeff[k].set_ylim(fp.corr_lst[k]['z_ylim'])
@@ -237,6 +246,9 @@ def main():
         fit_lst = [k for k in x if k.split('_')[0] in states]
         for k in fit_lst:
             x_fit[k] = x[k]
+        #print('DEBUG: x',x)
+        #print('DEBUG: x_fit',x_fit)
+        #sys.exit()
         #import IPython; IPython.embed()
         if has_svd:
             fit = lsqfit.nonlinear_fit(data=(x_fit,y), prior=priors, p0=p0, fcn=fit_funcs.fit_function,

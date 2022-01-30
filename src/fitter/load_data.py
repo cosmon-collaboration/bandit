@@ -22,7 +22,7 @@ def time_reverse(corr, reverse=True, phase=1, time_axis=1):
         cr = phase * corr
     return cr
 
-def load_h5(f5_file, corr_dict, return_gv=True, rw=None):
+def load_h5(f5_file, corr_dict, return_gv=True, rw=None, uncorr_corrs=False, uncorr_all=False):
     corrs = gv.BufferDict()
 
     # check if f5_file is list
@@ -138,8 +138,22 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None):
             corrs[k] = corrs[k] * reweight[:, None]
 
     # return correlators
+    for corr in corrs:
+        print(corr,corrs[corr].shape)
     if return_gv:
-        corrs_gv = gv.dataset.avg_data(corrs)
+        if uncorr_corrs or uncorr_all:
+            corrs_gv = {}
+            if uncorr_all:
+                for k in corrs:
+                    corrs_gv[k] = gv.dataset.avg_data(corrs[k])
+            else:
+                for corr in corr_dict:
+                    corrs_corr = {k:v for k,v in corrs.items() if corr in k}
+                    tmp_gv     = gv.dataset.avg_data(corrs_corr)
+                    for k in tmp_gv:
+                        corrs_gv[k] = tmp_gv[k]
+        else:
+            corrs_gv = gv.dataset.avg_data(corrs)
         return corrs_gv
     else:
         return corrs
