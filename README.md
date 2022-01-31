@@ -1,4 +1,6 @@
-# c51_corr_fitter
+# c51_corr_analysis
+The Collaboration 51 Correlation Function Analysis Suite.
+
 This fitter is designed to analyze correlation functions generated from lattice QFT calculations.  This fitting package is currently undergoing rapid development, and there is no promise of backwards compatibility yet.  Version numbers will be used to support reproducibility.
 
 - [Installation](#installation)
