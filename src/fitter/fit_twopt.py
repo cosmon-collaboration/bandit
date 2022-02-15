@@ -83,6 +83,7 @@ def main():
     except:
         reweight = False
     # block data
+    bl = args.block
     if 'block' in dir(fp) and fp.block != 1:
         bl = fp.block
     if args.block != 1: # allow cl override

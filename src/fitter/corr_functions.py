@@ -51,6 +51,27 @@ class CorrFunction:
                 r += A * np.exp(-E_n*t)
         return r
 
+    def exp_open(self, x, p):
+        ''' first add exp tower '''
+        r = self.exp(x,p)
+        ''' then add first open boundary condition term
+            r += A_open * exp( -(E_2pi - m_pi)*(T-t) )
+
+            we will model E_2pi = m_pi + dEOpen
+            therefore, we can set E = dEOpen
+        '''
+        t = x['t_range']
+        T = x['T']
+        E = p['%s_dEOpen_1' % (x['state'])]
+        if x['ztype'] == 'z_snk z_src':
+            z_src = p["%s_z%sOpen_1" % (x['state'], x['src'])]
+            z_snk = p["%s_z%sOpen_1" % (x['state'], x['snk'])]
+            r += z_snk * z_src * np.exp(-E *(T-t))
+        elif x['ztype'] == 'A_snk,src':
+            A = p['%s_z%s%sOpen_1' % (x['state'], x['snk'], x['src'])]
+            r += A * np.exp(-E *(T-t))
+        return r
+
     def cosh(self, x, p):
         r = 0
         t = x['t_range']
@@ -158,15 +179,11 @@ class CorrFunction:
                 x0p['t_range'] = x0['t_range']+tau
                 x1p['t_range'] = x1['t_range']+tau
                 if x['type'] == 'exp_r':
-                    corr = self.two_h_ratio(
-                        x, p) / self.exp(x0, p) / self.exp(x1, p)
-                    corr_p = self.two_h_ratio(
-                        xp, p) / self.exp(x0p, p) / self.exp(x1p, p)
+                    corr = self.two_h_ratio(x, p) / self.exp(x0, p) / self.exp(x1, p)
+                    corr_p = self.two_h_ratio(xp, p) / self.exp(x0p, p) / self.exp(x1p, p)
                 elif x['type'] == 'exp_r_conspire':
-                    corr = self.two_h_conspire(
-                        x, p) / self.exp(x0, p) / self.exp(x1, p)
-                    corr_p = self.two_h_conspire(
-                        xp, p) / self.exp(x0p, p) / self.exp(x1p, p)
+                    corr = self.two_h_conspire(x, p) / self.exp(x0, p) / self.exp(x1, p)
+                    corr_p = self.two_h_conspire(xp, p) / self.exp(x0p, p) / self.exp(x1p, p)
                 elif x['type'] == 'exp_r_ind':
                     corr = self.exp(x, p)
                     corr_p = self.exp(xp, p)
@@ -176,7 +193,7 @@ class CorrFunction:
             elif x['type'] == 'exp_r_conspire':
                 corr = self.two_h_conspire(x, p)
                 corr_p = self.two_h_conspire(xp, p)
-            elif x['type'] in ['exp', 'exp_r_ind']:
+            elif x['type'] in ['exp', 'exp_r_ind', 'exp_open']:
                 corr = self.exp(x, p)
                 corr_p = self.exp(xp, p)
             meff = 1/tau * np.log(corr / corr_p)
@@ -216,6 +233,8 @@ class FitCorr(object):
                 r[k] = self.corr_functions.cosh(x[k], p)
             elif x[k]['type'] == 'cosh_const':
                 r[k] = self.corr_functions.cosh_const(x[k], p)
+            elif x[k]['type'] == 'exp_open':
+                r[k] = self.corr_functions.exp_open(x[k], p)
             elif x[k]['type'] == 'exp_r_ind':
                 r[k] = self.corr_functions.exp(x[k], p)
             elif x[k]['type'] == 'exp_r':
