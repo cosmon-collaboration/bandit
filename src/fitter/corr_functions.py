@@ -72,6 +72,33 @@ class CorrFunction:
             r += A * np.exp(-E *(T-t))
         return r
 
+    def exp_gs(self,x,p):
+        ''' model the correlator with a geometric series inspired model
+
+            C(t) = A0 exp(-E0 t) / (1 - sum_n A_n exp( -dEn t))
+        '''
+        t  = x['t_range']
+        E0 = self.En(x, p, 0)
+        if x['ztype'] == 'z_snk z_src':
+            z_src = p["%s_z%s_%d" % (x['state'], x['src'], 0)]
+            z_snk = p["%s_z%s_%d" % (x['state'], x['snk'], 0)]
+            r = z_snk * z_src * np.exp( -E0 * t)
+        elif x['ztype'] == 'A_snk,src':
+            A = p['%s_z%s%s_%d' % (x['state'], x['snk'], x['src'], 0)]
+            r = A * np.exp(-E0*t)
+        ''' build denominator '''
+        r_den = 1
+        for n in range(1, x['n_state']):
+            dEn = self.dEn(x, p, n)
+            if x['ztype'] == 'z_snk z_src':
+                z_src = p["%s_z%s_%d" % (x['state'], x['src'], n)]
+                z_snk = p["%s_z%s_%d" % (x['state'], x['snk'], n)]
+                r_den += -z_snk * z_src * np.exp(-dEn*t)
+            elif x['ztype'] == 'A_snk,src':
+                A = p['%s_z%s%s_%d' % (x['state'], x['snk'], x['src'], n)]
+                r_den += -A * np.exp(-dEn*t)
+        return r / r_den
+
     def cosh(self, x, p):
         r = 0
         t = x['t_range']
@@ -193,9 +220,15 @@ class CorrFunction:
             elif x['type'] == 'exp_r_conspire':
                 corr = self.two_h_conspire(x, p)
                 corr_p = self.two_h_conspire(xp, p)
-            elif x['type'] in ['exp', 'exp_r_ind', 'exp_open']:
+            elif x['type'] in ['exp', 'exp_r_ind']:
                 corr = self.exp(x, p)
                 corr_p = self.exp(xp, p)
+            elif x['type'] == 'exp_open':
+                corr = self.exp_open(x, p)
+                corr_p = self.exp_open(xp, p)
+            elif x['type'] == 'exp_gs':
+                corr = self.exp_gs(x, p)
+                corr_p = self.exp_gs(xp, p)
             meff = 1/tau * np.log(corr / corr_p)
         else:
             sys.exit('unrecognized type, %s' % x['type'])
@@ -235,6 +268,8 @@ class FitCorr(object):
                 r[k] = self.corr_functions.cosh_const(x[k], p)
             elif x[k]['type'] == 'exp_open':
                 r[k] = self.corr_functions.exp_open(x[k], p)
+            elif x[k]['type'] == 'exp_gs':
+                r[k] = self.corr_functions.exp_gs(x[k], p)
             elif x[k]['type'] == 'exp_r_ind':
                 r[k] = self.corr_functions.exp(x[k], p)
             elif x[k]['type'] == 'exp_r':
