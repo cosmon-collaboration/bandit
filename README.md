@@ -13,12 +13,13 @@ This package requires the [lsqfit](https://github.com/gplepage/lsqfit) and [gvar
 
 This package is now locally pip-installable in `editable` mode (which means, you can actively develop the code and re-install quickly).  Tested locally with a clean anaconda installation, the following works for installing on a mac OS at least.
 
-```
 [skip these steps unless you want to test a "clean" install]
+```
 conda create -n bare3.8 python=3.8
 conda activate bare3.8
-
+```
 [rest of the install]
+```
 cd <some_dir_to_store_src_code>
 [optional LSQFIT-GUI interface]
 git clone https://github.com/ckoerber/lsqfit-gui
@@ -27,8 +28,8 @@ pip install [--user] -e .
 popd
 ```
 Ignore the "ERROR" raised by the install - it works, but still throws an error.  We are working to understand how to fix that message.
-```
 [main code]
+```
 git clone https://github.com/callat-qcd/c51_corr_fitter
 pushd c51_corr_fitter
 pip install [--user] -e .
