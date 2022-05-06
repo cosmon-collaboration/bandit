@@ -156,7 +156,7 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
 
     # block/bin data
     if bl != 1:
-        print('blocking data in units of saved configs: block length = %d' %bl)
+        print('blocking data in units of saved configs: block length = %d' % bl)
         corrs_bl = {}
         for corr in corrs:
             corrs_bl[corr] = block_data(corrs[corr], bl)

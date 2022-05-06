@@ -64,6 +64,8 @@ def main():
                         help=            'uncorrelate all snk,src for each correlation function? [%(default)s]')
     parser.add_argument('--interact',    default=False, action='store_true',
                         help=            'open IPython instance after to interact with results? [%(default)s]')
+    parser.add_argument('--gui',    default=False, action='store_true',
+                        help=            'open dashboard for analyzing fit. Must be used together with fit flag. [%(default)s]')
 
     args = parser.parse_args()
     if args.save_figs and not os.path.exists('figures'):
@@ -294,6 +296,10 @@ def main():
         else:
             print(fit)
 
+        if args.gui:
+            from lsqfitgui import run_server
+            run_server(fit, name="c51 Two-Point Fitter")
+
         if args.eff:
             x_plot = copy.deepcopy(x_fit)
             for k in x_plot:
@@ -463,11 +469,15 @@ def main():
 
                 print('DONE')
     if args.interact:
-        import IPython
-        IPython.embed()
+        import IPython; IPython.embed()
 
     plt.ioff()
     plt.show()
+
+    if args.fit and args.gui:
+        from lsqfitgui import run_server
+        run_server(fit, name="c51 Two-Point Fitter")
+
 
 
 if __name__ == "__main__":
