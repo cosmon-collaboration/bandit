@@ -25,6 +25,9 @@ git clone https://github.com/ckoerber/lsqfit-gui
 pushd lsqfit-gui
 pip install [--user] -e .
 popd
+```
+Ignore the "ERROR" raised by the install - it works, but still throws an error.  We are working to understand how to fix that message.
+```
 [main code]
 git clone https://github.com/callat-qcd/c51_corr_fitter
 pushd c51_corr_fitter
