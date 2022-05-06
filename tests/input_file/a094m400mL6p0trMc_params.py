@@ -118,9 +118,13 @@ for corr in corr_lst:
         state = corr+'_'+sp
         x[state] = dict()
         x[state]['state'] = corr
-        for k in ['type', 'T', 'n_state', 't_range', 'eff_ylim']:
+        for k in ['type', 'T', 'n_state', 't_range', 'eff_ylim', 'ztype']:
             if k in corr_lst[corr]:
                 x[state][k] = corr_lst[corr][k]
+        if 't0' in corr_lst[corr]:
+            x[state]['t0'] = corr_lst[corr]['t0']
+        else:
+            x[state]['t0'] = 0
         x[state]['color'] = corr_lst[corr]['colors'][sp]
         x[state]['snk']   = snk
         x[state]['src']   = corr_lst[corr]['srcs'][0]
