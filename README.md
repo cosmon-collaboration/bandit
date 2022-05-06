@@ -13,7 +13,7 @@ This package requires the [lsqfit](https://github.com/gplepage/lsqfit) and [gvar
 
 This package is now locally pip-installable in `editable` mode (which means, you can actively develop the code and re-install quickly).  Tested locally with a clean anaconda installation, the following works for installing on a mac OS at least.
 
-[skip these steps unless you want to test a "clean" install]
+[skip these steps unless you want to test a "clean" install - ALSO - they require an [Anaconda Python](https://www.anaconda.com) installation to have the `conda` util]
 ```
 conda create -n bare3.8 python=3.8
 conda activate bare3.8
