@@ -19,9 +19,17 @@ conda create -n bare3.8 python=3.8
 conda activate bare3.8
 
 [rest of the install]
+cd <some_dir_to_store_src_code>
+[optional LSQFIT-GUI interface]
+git clone https://github.com/ckoerber/lsqfit-gui
+pushd lsqfit-gui
+pip install [--user] -e .
+popd
+[main code]
 git clone https://github.com/callat-qcd/c51_corr_fitter
-cd c51_corr_fitter
-pip install -e .
+pushd c51_corr_fitter
+pip install [--user] -e .
+popd
 ```
 This will result in an installation that claims there are pip install errors, but in practice, the installation works.  To test success, type
 ```
@@ -47,9 +55,9 @@ which will generate effective mass plots and perform the fit of the states speci
 # Copyright Notice
 
 
-Collaboration 51 Correlation Function Analysis Suite (c51_corr_analysis) 
-Copyright (c) 2022, The Regents of the University of California, through 
-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+Collaboration 51 Correlation Function Analysis Suite (c51_corr_analysis)
+Copyright (c) 2022, The Regents of the University of California, through
+Lawrence Berkeley National Laboratory (subject to receipt of any required
 approvals from the U.S. Dept. of Energy). All rights reserved.
 
 If you have questions about your rights to use or distribute this software,
@@ -60,5 +68,5 @@ NOTICE.  This Software was developed under funding from the U.S. Department
 of Energy and the U.S. Government consequently retains certain rights.  As
 such, the U.S. Government has been granted for itself and others acting on
 its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the
-Software to reproduce, distribute copies to the public, prepare derivative 
+Software to reproduce, distribute copies to the public, prepare derivative
 works, and perform publicly and display publicly, and to permit others to do so.
