@@ -302,17 +302,15 @@ def main():
             for d in y:
                 if d in x_fit:
                     data_chop[d] = data_cfg[d][:,x_fit[d]['t_range']]
-            s = gv.dataset.svd_diagnosis(data_chop, nbstrap=args.svd_nbs)
-            svdcut = s.svdcut
+            svd_test = gv.dataset.svd_diagnosis(data_chop, nbstrap=args.svd_nbs)
+            svdcut = svd_test.svdcut
             has_svd = True
             if args.svdcut is not None:
-                print('    s.svdcut = %.2e' %s.svdcut)
+                print('    s.svdcut = %.2e' %svd_test.svdcut)
                 print(' args.svdcut = %.2e' %args.svdcut)
                 use_svd = input('   use specified svdcut instead of that from svd_diagnosis? [y/n]\n')
                 if use_svd in ['y','Y','yes']:
                     svdcut = args.svdcut
-            fig = plt.figure('svd_diagnosis', figsize=(7, 4))
-            s.plot_ratio(show=True)
         if has_svd:
             fit = lsqfit.nonlinear_fit(data=(x_fit, y), prior=priors, p0=p0, fcn=fit_funcs.fit_function,
                                        svdcut=svdcut)
@@ -434,9 +432,7 @@ def main():
                     p0_bs[k] = fit.p[k].mean
 
                 # load the data
-                corr_data = ld.load_h5(
-                    fp.data_file, fp.corr_lst, return_gv=False)
-                Ncfg = corr_data[list(corr_data.keys())[0]].shape[0]
+                Ncfg = data_cfg[list(data_cfg.keys())[0]].shape[0]
 
                 # seed the random number generator
                 if args.bs_seed == 'None':
@@ -458,18 +454,21 @@ def main():
 
                 gs_bs = dict()
                 for k in fit.p:
-                    if k.split('_')[-1] == '0':
-                        gs_bs[k] = []
+                    gs_bs[k] = []
 
                 for bs in range(args.Nbs):
                     sys.stdout.write('%4d / %d\r' % (bs, args.Nbs))
                     sys.stdout.flush()
+
+                    ''' all gvar's created in this switch are destroyed at restore_gvar [they are out of scope] '''
+                    gv.switch_gvar()
+
                     corr_bs = {}
-                    for k in corr_data:
-                        corr_bs[k] = corr_data[k][bs_lst[bs]]
+                    for k in data_cfg:
+                        corr_bs[k] = data_cfg[k][bs_lst[bs]]
                     bs_gv = gv.dataset.avg_data(corr_bs)
                     y_bs = {k: v[x_fit[k]['t_range']]
-                            for (k, v) in bs_gv.items() if k in states}
+                            for (k, v) in bs_gv.items() if k in fit_lst}
                     p_bs = dict()
                     for k in p_bs_mean:
                         p_bs[k] = gv.gvar(p_bs_mean[k][bs], priors[k].sdev)
@@ -480,9 +479,13 @@ def main():
                     else:
                         fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
                                                       fcn=fit_funcs.fit_function)
+
                     for r in gs_bs:
-                        if r in fit_bs.p:
-                            gs_bs[r].append(fit_bs.p[r].mean)
+                        gs_bs[r].append(fit_bs.p[r].mean)
+
+                    ''' end of gvar scope used for bootstrap '''
+                    gv.restore_gvar()
+
                 for r in gs_bs:
                     gs_bs[r] = np.array(gs_bs[r])
                 # write the results
@@ -499,6 +502,10 @@ def main():
                                 args.bs_path+'/'+r, data=gs_bs[r])
 
                 print('DONE')
+
+        if args.svd_test:
+            fig = plt.figure('svd_diagnosis', figsize=(7, 4))
+            svd_test.plot_ratio(show=True)
     if args.interact:
         import IPython; IPython.embed()
 
