@@ -28,6 +28,9 @@ def main():
     parser.add_argument('--fit',         default=False, action='store_true',
                         help=            'do fit? [%(default)s]')
     parser.add_argument('--svdcut',      type=float, help='add svdcut to fit')
+    parser.add_argument('--svd_test',    default=True, action='store_false',
+                        help=            'perform gvar svd_diagnosis? [%(default)s]')
+    parser.add_argument('--svd_nbs',     type=int, default=50, help='number of BS samples for estimating SVD cut [%(default)s]')
     parser.add_argument('--fold',        default=True, action='store_false',
                         help=            'fold data about T/2? [%(default)s]')
     parser.add_argument('-b', '--block', default=1, type=int,
@@ -95,9 +98,13 @@ def main():
         rw_path = fp.rw_path
         gv_data = ld.load_h5(fp.data_file, fp.corr_lst, rw=[rw_files, rw_path], bl=bl,
                              uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all)
+        data_cfg = ld.load_h5(fp.data_file, fp.corr_lst, rw=[rw_files, rw_path], bl=bl,
+                             uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all, return_gv=False, verbose=False)
     else:
         gv_data = ld.load_h5(fp.data_file, fp.corr_lst, bl=bl,
                              uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all)
+        data_cfg = ld.load_h5(fp.data_file, fp.corr_lst, bl=bl,
+                             uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all, return_gv=False, verbose=False)
     if args.states:
         states = args.states
     else:
@@ -194,6 +201,7 @@ def main():
             ax_zeff[k].set_ylabel(
                 r'$z_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
             ax_zeff[k].legend(fontsize=20, loc=1)
+
     # set up svdcut if added
     if args.svdcut is not None:
         svdcut = args.svdcut
@@ -230,6 +238,14 @@ def main():
 
                 y_tmp = {k: v[x_tmp[k]['t_range']]
                          for (k, v) in gv_data.items() if k in x_tmp}
+                if args.svd_test:
+                    y_chop = dict()
+                    for d in y_tmp:
+                        if d in x_tmp:
+                            y_chop[d] = data_cfg[d][:,x_tmp[d]['t_range']]
+                    s = gv.dataset.svd_diagnosis(data_chop, nbstrap=args.svd_nbs)
+                    svdcut = s.svdcut
+                    has_svd = True
                 for k in x_tmp:
                     if k.split('_')[0] not in states:
                         y_tmp.pop(k)
@@ -273,7 +289,6 @@ def main():
         print('')
 
     if args.fit:
-        #import IPython; IPython.embed()
         fit_funcs = cf.FitCorr()
         p0 = {k: v.mean for (k, v) in priors.items()}
         # only pass x for states in fit
@@ -281,10 +296,23 @@ def main():
         fit_lst = [k for k in x if k.split('_')[0] in states]
         for k in fit_lst:
             x_fit[k] = x[k]
-        #print('DEBUG: x',x)
-        #print('DEBUG: x_fit',x_fit)
-        #sys.exit()
-        #import IPython; IPython.embed()
+
+        if args.svd_test:
+            data_chop = dict()
+            for d in y:
+                if d in x_fit:
+                    data_chop[d] = data_cfg[d][:,x_fit[d]['t_range']]
+            s = gv.dataset.svd_diagnosis(data_chop, nbstrap=args.svd_nbs)
+            svdcut = s.svdcut
+            has_svd = True
+            if args.svdcut is not None:
+                print('    s.svdcut = %.2e' %s.svdcut)
+                print(' args.svdcut = %.2e' %args.svdcut)
+                use_svd = input('   use specified svdcut instead of that from svd_diagnosis? [y/n]\n')
+                if use_svd in ['y','Y','yes']:
+                    svdcut = args.svdcut
+            fig = plt.figure('svd_diagnosis', figsize=(7, 4))
+            s.plot_ratio(show=True)
         if has_svd:
             fit = lsqfit.nonlinear_fit(data=(x_fit, y), prior=priors, p0=p0, fcn=fit_funcs.fit_function,
                                        svdcut=svdcut)
@@ -305,7 +333,10 @@ def main():
             for k in x_plot:
                 sp = k.split('_')[-1]
                 ax = ax_meff[k.split('_')[0]]
-                t0 = x_fit[k]['t0']
+                if 't0' in x_fit[k]:
+                    t0 = x_fit[k]['t0']
+                else:
+                    t0 = 0
                 x_plot[k]['t_range'] = np.arange(
                     x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
                 fit_funcs.corr_functions.eff_mass(

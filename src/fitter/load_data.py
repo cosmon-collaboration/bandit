@@ -25,7 +25,7 @@ def time_reverse(corr, reverse=True, phase=1, time_axis=1):
     return cr
 
 
-def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=False, uncorr_all=False):
+def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=False, uncorr_all=False, verbose=True):
     corrs = gv.BufferDict()
 
     # check if f5_file is list
@@ -163,8 +163,9 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
         corrs = corrs_bl
 
     # return correlators
-    for corr in corrs:
-        print(corr, corrs[corr].shape)
+    if verbose:
+        for corr in corrs:
+            print(corr, corrs[corr].shape)
     if return_gv:
         if uncorr_corrs or uncorr_all:
             corrs_gv = {}
