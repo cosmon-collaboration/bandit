@@ -45,6 +45,8 @@ def main():
                         help=            'plot excited state stability? [%(default)s]')
     parser.add_argument('--states',      nargs='+',
                         help=            'specify states to fit?')
+    parser.add_argument('-v','--verbose', default=False,action='store_true',
+                        help=            'add verbosity [%(default)s]')
     parser.add_argument('--verbose_fit', default=False, action='store_true',
                         help=            'print y vs f(x,p) also? [%(default)s]')
     parser.add_argument('--save_figs',   default=False, action='store_true',
@@ -53,7 +55,7 @@ def main():
                         help=            'run bootstrap fit? [%(default)s]')
     parser.add_argument('--Nbs',         type=int, default=2000,
                         help=            'specify the number of BS samples to compute [%(default)s]')
-    parser.add_argument('--bs_seed',     default='None',
+    parser.add_argument('--bs_seed',     default=None,
                         help=            'set a string to seed the bootstrap - None will be random [%(default)s]')
     parser.add_argument('--bs_results',  default='bs_results/spectrum_bs.h5',
                         help=            'set file to write bootstrap results [%(default)s]')
@@ -426,35 +428,40 @@ def main():
                                 'you asked to write bs results to an existing dset and overwrite =', args.overwrite)
             if not have_bs:
                 print('beginning Nbs=%d bootstrap fits' % args.Nbs)
+                import bootstrap as bs
+
                 # let us use the fit posterior to set the initial guess for bs loop
                 p0_bs = dict()
                 for k in fit.p:
                     p0_bs[k] = fit.p[k].mean
 
-                # load the data
-                Ncfg = data_cfg[list(data_cfg.keys())[0]].shape[0]
+                if not args.bs_seed and 'bs_seed' not in dir(fp):
+                    tmp = input('you have not passed a BS seed nor is it defined in the input file\nenter a seed or hit return for none')
+                    if not tmp:
+                        bs_seed = None
+                    else:
+                        bs_seed = tmp
+                elif 'bs_seed' in dir(fp):
+                    bs_seed = fp.bs_seed
+                if args.bs_seed:
+                    if args.verbose:
+                        print('WARNING: you are overwriting the bs_seed from the input file')
+                    bs_seed = args.bs_seed
 
-                # seed the random number generator
-                if args.bs_seed == 'None':
-                    random.seed(None)
-                else:
-                    try:
-                        bs_seed = fp.bs_seed
-                    except:
-                        bs_seed = args.bs_seed
-                    random.seed(args.bs_seed)
-                seed_int = random.randint(1, 1e6)
-                np.random.seed(seed_int)
-                # make BS list and random prior central values
-                bs_lst = np.random.randint(Ncfg, size=[args.Nbs, Ncfg])
+                # make BS data
+                corr_bs = {}
+                for k in data_cfg:
+                    corr_bs[k] = bs.bs_corrs(data_cfg[k], Nbs=args.Nbs, seed=bs_seed, return_mbs=True)
+
+                # make BS list for priors
                 p_bs_mean = dict()
                 for k in priors:
-                    p_bs_mean[k] = np.random.normal(
-                        loc=priors[k].mean, scale=priors[k].sdev, size=args.Nbs)
-
-                gs_bs = dict()
+                    p_bs_mean[k] = bs.bs_prior(args.Nbs, mean=priors[k].mean,
+                                            sdev=priors[k].sdev, seed=bs_seed+'_'+k)
+                # set up posterior lists of bs results
+                post_bs = dict()
                 for k in fit.p:
-                    gs_bs[k] = []
+                    post_bs[k] = []
 
                 for bs in range(args.Nbs):
                     sys.stdout.write('%4d / %d\r' % (bs, args.Nbs))
@@ -463,10 +470,10 @@ def main():
                     ''' all gvar's created in this switch are destroyed at restore_gvar [they are out of scope] '''
                     gv.switch_gvar()
 
-                    corr_bs = {}
-                    for k in data_cfg:
-                        corr_bs[k] = data_cfg[k][bs_lst[bs]]
-                    bs_gv = gv.dataset.avg_data(corr_bs)
+                    bs_data = dict()
+                    for k in corr_bs:
+                        bs_data[k] = corr_bs[k][bs]
+                    bs_gv = gv.dataset.avg_data(bs_data)
                     y_bs = {k: v[x_fit[k]['t_range']]
                             for (k, v) in bs_gv.items() if k in fit_lst}
                     p_bs = dict()
@@ -480,26 +487,26 @@ def main():
                         fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
                                                       fcn=fit_funcs.fit_function)
 
-                    for r in gs_bs:
-                        gs_bs[r].append(fit_bs.p[r].mean)
+                    for r in post_bs:
+                        post_bs[r].append(fit_bs.p[r].mean)
 
                     ''' end of gvar scope used for bootstrap '''
                     gv.restore_gvar()
 
-                for r in gs_bs:
-                    gs_bs[r] = np.array(gs_bs[r])
+                for r in post_bs:
+                    post_bs[r] = np.array(post_bs[r])
                 # write the results
                 with h5py.File(bs_file, 'a') as f5:
                     try:
                         f5.create_group(args.bs_path)
                     except Exception as e:
                         print(e)
-                    for r in gs_bs:
-                        if len(gs_bs[r]) > 0:
+                    for r in post_bs:
+                        if len(post_bs[r]) > 0:
                             if r in f5[args.bs_path]:
                                 del f5[args.bs_path+'/'+r]
                             f5.create_dataset(
-                                args.bs_path+'/'+r, data=gs_bs[r])
+                                args.bs_path+'/'+r, data=post_bs[r])
 
                 print('DONE')
 
