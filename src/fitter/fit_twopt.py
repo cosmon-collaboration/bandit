@@ -245,7 +245,7 @@ def main():
                     for d in y_tmp:
                         if d in x_tmp:
                             y_chop[d] = data_cfg[d][:,x_tmp[d]['t_range']]
-                    s = gv.dataset.svd_diagnosis(data_chop, nbstrap=args.svd_nbs)
+                    s = gv.dataset.svd_diagnosis(y_chop, nbstrap=args.svd_nbs)
                     svdcut = s.svdcut
                     has_svd = True
                 for k in x_tmp:
@@ -458,6 +458,7 @@ def main():
                 for k in priors:
                     p_bs_mean[k] = bs.bs_prior(args.Nbs, mean=priors[k].mean,
                                             sdev=priors[k].sdev, seed=bs_seed+'_'+k)
+
                 # set up posterior lists of bs results
                 post_bs = dict()
                 for k in fit.p:
