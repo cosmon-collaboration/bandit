@@ -1,6 +1,7 @@
 import fitter.plotting as plot
 import fitter.corr_functions as cf
 import fitter.load_data as ld
+#import fitter.fit_analyzer as analyze
 import lsqfit
 import gvar as gv
 import importlib
@@ -133,76 +134,9 @@ def main():
                 priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
 
     if args.eff:
+        
+        plot.make_eff_plots(states=states,fp=fp,x_fit=None,priors=priors,gv_data=gv_data, fit=None,scale=args.scale,show_fit=False)
         plt.ion()
-        ax_meff = {}
-        ax_zeff = {}
-        ax_r = {}
-        for k in states:
-            clrs = fp.corr_lst[k]['colors']
-            if 't0' in fp.corr_lst[k]:
-                t0 = fp.corr_lst[k]['t0']
-            else:
-                t0 = 0
-            # m_eff
-            fig = plt.figure('m_'+k, figsize=(7, 4))
-            if args.scale:
-                ax_meff[k] = plt.axes([0.15, 0.15, 0.74, 0.84])
-            else:
-                ax_meff[k] = plt.axes([0.15, 0.15, 0.84, 0.84])
-            if fp.corr_lst[k]['type'] not in ['exp_r', 'exp_r_conspire']:
-                p = priors[k+'_E_0']
-            else:
-                d1, d2 = fp.corr_lst[k]['denom']
-                p = priors[d1+'_E_0'] + priors[d2+'_E_0'] + priors[k+'_dE_0_0']
-            ax_meff[k].axhspan(p.mean-p.sdev, p.mean
-                               + p.sdev, color='k', alpha=.2)
-            plot.plot_eff(ax_meff[k], gv_data, k,
-                          mtype=fp.corr_lst[k]['type'], colors=clrs, offset=t0)
-            ax_meff[k].set_xlim(fp.corr_lst[k]['xlim'])
-            ax_meff[k].set_ylim(fp.corr_lst[k]['ylim'])
-            ax_meff[k].set_xlabel(r'$t/a$', fontsize=20)
-            ax_meff[k].set_ylabel(
-                r'$m_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
-            ax_meff[k].legend(fontsize=20)
-
-            if 'denom' in fp.corr_lst[k]:
-                fig = plt.figure('r_'+k, figsize=(7, 4))
-                ax_r[k] = plt.axes([0.15, 0.15, 0.84, 0.84])
-                if fp.corr_lst[k]['type'] == 'exp_r_ind':
-                    p = priors[k+'_E_0']
-                else:
-                    p = priors[k+'_dE_0_0']
-                ax_r[k].axhspan(p.mean-p.sdev, p.mean
-                                + p.sdev, color='k', alpha=.2)
-                plot.plot_eff(ax_r[k], gv_data, k, mtype=fp.corr_lst[k]['type'],
-                              colors=clrs, denom_key=fp.corr_lst[k]['denom'])
-                ax_r[k].set_xlim(fp.corr_lst[k]['xlim'])
-                #ax_r[k].set_ylim(fp.corr_lst[k]['ylim'])
-                ax_r[k].set_ylim(-.02, .02)
-                ax_r[k].set_xlabel(r'$t/a$', fontsize=20)
-                ax_r[k].set_ylabel(
-                    r'$m_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
-                ax_r[k].legend(fontsize=20)
-
-            # z_eff
-            fig = plt.figure('z_'+k, figsize=(7, 4))
-            ax_zeff[k] = plt.axes([0.15, 0.15, 0.84, 0.82])
-            snksrc = {'snks': fp.corr_lst[k]['snks'],
-                      'srcs': fp.corr_lst[k]['srcs']}
-            mtype = fp.corr_lst[k]['type']
-            ztype = fp.corr_lst[k]['ztype']
-            # this zeff prior is not generic yet
-            #for z in fp.corr_lst[k]['snks']:
-            #    p = priors[k+'_z'+z+'_0']
-            #    ax_zeff[k].axhspan(p.mean-p.sdev, p.mean+p.sdev, color='k',alpha=.2)
-            plot.plot_zeff(ax_zeff[k], gv_data, k, ztype=ztype,
-                           mtype=mtype, snksrc=snksrc, colors=clrs)
-            ax_zeff[k].set_xlim(fp.corr_lst[k]['xlim'])
-            ax_zeff[k].set_ylim(fp.corr_lst[k]['z_ylim'])
-            ax_zeff[k].set_xlabel(r'$t/a$', fontsize=20)
-            ax_zeff[k].set_ylabel(
-                r'$z_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
-            ax_zeff[k].legend(fontsize=20, loc=1)
 
     # set up svdcut if added
     if args.svdcut is not None:
@@ -216,79 +150,81 @@ def main():
             has_svd = False
 
     if args.stability:
-        p = copy.deepcopy(fp.priors)
+        plot.make_stability_plot(states=states,x=x,fp=fp, priors=priors, gv_data=gv_data,scale=args.scale, stability=args.stability, svd_test=args.svd_test,
+        svd_nbs=args.svd_nbs,data_cfg = data_cfg,n_states=n_states,es_stability=args.es_stability,save_figs=args.save_figs)
 
-        for state in args.stability:
-            if 't_sweep' in fp.corr_lst[state]:
-                tmin = fp.corr_lst[state]['t_sweep']
-            else:
-                tmin = range(2, x[state]['t_range'][-1])
-            if 'n_sweep' in fp.corr_lst[state]:
-                n_states = fp.corr_lst[state]['n_sweep']
-            else:
-                n_states = range(1, 6)
-            tn_opt = (fp.corr_lst[state]['t_range'][0],
-                      fp.corr_lst[state]['n_state'])
-            x_tmp = dict()
-            for k in [kk for kk in x if kk.split('_')[0] == state]:
-                x_tmp[k] = x[k].copy()
+        # p = copy.deepcopy(fp.priors)
 
-            fits = {}
-            for ti in tmin:
-                for k in x_tmp:
-                    x_tmp[k]['t_range'] = np.arange(ti, x[k]['t_range'][-1]+1)
+        # for state in args.stability:
+        #     if 't_sweep' in fp.corr_lst[state]:
+        #         tmin = fp.corr_lst[state]['t_sweep']
+        #     else:
+        #         tmin = range(2, x[state]['t_range'][-1])
+        #     if 'n_sweep' in fp.corr_lst[state]:
+        #         n_states = fp.corr_lst[state]['n_sweep']
+        #     else:
+        #         n_states = range(1, 6)
+        #     tn_opt = (fp.corr_lst[state]['t_range'][0],
+        #               fp.corr_lst[state]['n_state'])
+        #     x_tmp = dict()
+        #     for k in [kk for kk in x if kk.split('_')[0] == state]:
+        #         x_tmp[k] = x[k].copy()
 
-                y_tmp = {k: v[x_tmp[k]['t_range']]
-                         for (k, v) in gv_data.items() if k in x_tmp}
-                if args.svd_test:
-                    y_chop = dict()
-                    for d in y_tmp:
-                        if d in x_tmp:
-                            y_chop[d] = data_cfg[d][:,x_tmp[d]['t_range']]
-                    s = gv.dataset.svd_diagnosis(y_chop, nbstrap=args.svd_nbs)
-                    svdcut = s.svdcut
-                    has_svd = True
-                for k in x_tmp:
-                    if k.split('_')[0] not in states:
-                        y_tmp.pop(k)
-                if ti == tmin[0]:
-                    print([k for k in y_tmp])
-                for ns in n_states:
-                    xx = copy.deepcopy(x_tmp)
-                    for k in xx:
-                        ''' NOTE  - we are chaning n_s for pi, D and Dpi all together '''
-                        xx[k]['n_state'] = ns
-                    fit_funcs = cf.FitCorr()
-                    p_sweep = {}
-                    for k in p:
-                        if int(k.split('_')[-1].split(')')[0]) < ns:
-                            p_sweep[k] = p[k]
-                    p0 = {k: v.mean for (k, v) in priors.items()}
-                    #print('t_min = %d  ns = %d' %(ti,ns))
-                    sys.stdout.write(
-                        'sweeping t_min = %d n_s = %d\r' % (ti, ns))
-                    sys.stdout.flush()
-                    if has_svd:
-                        f_tmp = lsqfit.nonlinear_fit(data=(xx, y_tmp),
-                                                     prior=p_sweep, p0=p0,
-                                                     fcn=fit_funcs.fit_function, svdcut=svdcut)
-                    else:
-                        f_tmp = lsqfit.nonlinear_fit(data=(xx, y_tmp),
-                                                     prior=p_sweep, p0=p0,
-                                                     fcn=fit_funcs.fit_function)
-                    fits[(ti, ns)] = f_tmp
+        #     fits = {}
+        #     for ti in tmin:scale
+        #     x_tmp[k]['t_range'] = np.arange(ti, x[k]['t_range'][-1]+1)
 
-            ylim = None
-            if 'eff_ylim' in x_tmp[list(x_tmp.keys())[0]]:
-                ylim = x_tmp[k]['eff_ylim']
-            ylim = None
-            plot.plot_stability(fits, tmin, n_states, tn_opt,
-                                state, ylim=ylim, save=args.save_figs)
-            if args.es_stability:
-                for i_n in range(1, n_states[-1]):
-                    plot.plot_stability(fits, tmin, n_states, tn_opt, state,
-                                        ylim=ylim, save=args.save_figs, n_plot=i_n, scale=args.scale)
-        print('')
+        #     y_tmp = {k: v[x_tmp[k]['t_range']]
+        #                  for (k, v) in gv_data.items() if k in x_tmp}
+        #     if args.svd_test:
+        #         y_chop = dict()
+        #         for d in y_tmp:
+        #             if d in x_tmp:
+        #                 y_chop[d] = data_cfg[d][:,x_tmp[d]['t_range']]
+        #         s = gv.dataset.svd_diagnosis(y_chop, nbstrap=args.svd_nbs)
+        #         svdcut = s.svdcut
+        #         has_svd = True
+        #     for k in x_tmp:
+        #         if k.split('_')[0] not in states:
+        #             y_tmp.pop(k)
+        #     if ti == tmin[0]:
+        #         print([k for k in y_tmp])
+        #     for ns in n_states:
+        #         xx = copy.deepcopy(x_tmp)
+        #         for k in xx:
+        #             ''' NOTE  - we are chaning n_s for pi, D and Dpi all together '''
+        #             xx[k]['n_state'] = ns
+        #         fit_funcs = cf.FitCorr()
+        #         p_sweep = {}
+        #         for k in p:
+        #             if int(k.split('_')[-1].split(')')[0]) < ns:
+        #                 p_sweep[k] = p[k]
+        #         p0 = {k: v.mean for (k, v) in priors.items()}
+        #         #print('t_min = %d  ns = %d' %(ti,ns))
+        #         sys.stdout.write(
+        #             'sweeping t_min = %d n_s = %d\r' % (ti, ns))
+        #         sys.stdout.flush()
+        #         if has_svd:
+        #             f_tmp = lsqfit.nonlinear_fit(data=(xx, y_tmp),
+        #                                             prior=p_sweep, p0=p0,
+        #                                             fcn=fit_funcs.fit_function, svdcut=svdcut)
+        #         else:
+        #             f_tmp = lsqfit.nonlinear_fit(data=(xx, y_tmp),
+        #                                             prior=p_sweep, p0=p0,
+        #                                             fcn=fit_funcs.fit_function)
+        #         fits[(ti, ns)] = f_tmp
+
+        #     ylim = None
+        #     if 'eff_ylim' in x_tmp[list(x_tmp.keys())[0]]:
+        #         ylim = x_tmp[k]['eff_ylim']
+        #     ylim = None
+        #     plot.plot_stability(fits, tmin, n_states, tn_opt,
+        #                         state, ylim=ylim, save=args.save_figs)
+        #     if args.es_stability:
+        #         for i_n in range(1, n_states[-1]):
+        #             plot.plot_stability(fits, tmin, n_states, tn_opt, state,
+        #                                 ylim=ylim, save=args.save_figs, n_plot=i_n, scale=args.scale)
+        # print('')
 
     if args.fit:
         fit_funcs = cf.FitCorr()
@@ -329,84 +265,87 @@ def main():
             run_server(fit, name="c51 Two-Point Fitter")
 
         if args.eff:
-            x_plot = copy.deepcopy(x_fit)
-            for k in x_plot:
-                sp = k.split('_')[-1]
-                ax = ax_meff[k.split('_')[0]]
-                if 't0' in x_fit[k]:
-                    t0 = x_fit[k]['t0']
-                else:
-                    t0 = 0
-                x_plot[k]['t_range'] = np.arange(
-                    x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-                fit_funcs.corr_functions.eff_mass(
-                    x_plot[k], fit.p, ax, t0=t0, color=x_plot[k]['color'])
-                x_plot[k]['t_range'] = np.arange(
-                    x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-                fit_funcs.corr_functions.eff_mass(
-                    x_plot[k], fit.p, ax, t0=t0, color='k', alpha=.1)
-                if 'exp_r' in x_plot[k]['type']:
-                    ax = ax_r[k.split('_')[0]]
-                    if x_plot[k]['type'] in ['exp_r', 'exp_r_conspire']:
-                        x_plot[k]['t_range'] = np.arange(
-                            x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-                        x_plot[x_plot[k]['denom'][0]+'_'
-                               + sp]['t_range'] = x_plot[k]['t_range']
-                        x_plot[x_plot[k]['denom'][1]+'_'
-                               + sp]['t_range'] = x_plot[k]['t_range']
-                        d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
-                               x_plot[x_plot[k]['denom'][1]+'_'+sp]]
-                        fit_funcs.corr_functions.eff_mass(
-                            x_plot[k], fit.p, ax, color=x_plot[k]['color'], denom_x=d_x)
-                        x_plot[k]['t_range'] = np.arange(
-                            x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-                        x_plot[x_plot[k]['denom'][0]+'_'
-                               + sp]['t_range'] = x_plot[k]['t_range']
-                        x_plot[x_plot[k]['denom'][1]+'_'
-                               + sp]['t_range'] = x_plot[k]['t_range']
-                        d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
-                               x_plot[x_plot[k]['denom'][1]+'_'+sp]]
-                        fit_funcs.corr_functions.eff_mass(
-                            x_plot[k], fit.p, ax, color='k', alpha=.1, denom_x=d_x)
-                    else:
-                        x_plot[k]['t_range'] = np.arange(
-                            x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-                        fit_funcs.corr_functions.eff_mass(
-                            x_plot[k], fit.p, ax, color=x_plot[k]['color'])
-                        x_plot[k]['t_range'] = np.arange(
-                            x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-                        fit_funcs.corr_functions.eff_mass(
-                            x_plot[k], fit.p, ax, color='k', alpha=.1)
+            plot.make_eff_plots(states, fp, x_fit=x_fit, fit=fit,gv_data=gv_data, priors=priors, scale=args.scale,show_fit=True)
 
-        if args.eff and args.scale:
-            for k in ax_meff:
-                s, units = float(args.scale[0]), args.scale[1]
-                axr = ax_meff[k].twinx()
-                print(k, ax_meff[k].get_ylim())
-                print(ax_meff[k].get_yticks())
-                axr.set_ylim(ax_meff[k].get_ylim()[0]*s,
-                             ax_meff[k].get_ylim()[1]*s)
-                axr.set_yticks([s*t for t in ax_meff[k].get_yticks()[:-1]])
-                if units in ['GeV', 'gev']:
-                    axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
-                else:
-                    axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
-                axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
-                               (units), fontsize=20)
+            # x_plot = copy.deepcopy(x_fit)
+            # for k in x_plot:
+            #     sp = k.split('_')[-1]
+            #     ax = ax_meff[k.split('_')[0]]
+            #     if 't0' in x_fit[k]:
+            #         t0 = x_fit[k]['t0']
+            #     else:
+            #         t0 = 0
+            #     x_plot[k]['t_range'] = np.arange(
+            #         x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
+            #     fit_funcs.corr_functions.eff_mass(
+            #         x_plot[k], fit.p, ax, t0=t0, color=x_plot[k]['color'])
+            #     x_plot[k]['t_range'] = np.arange(
+            #         x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
+            #     fit_funcs.corr_functions.eff_mass(
+            #         x_plot[k], fit.p, ax, t0=t0, color='k', alpha=.1)
+            #     if 'exp_r' in x_plot[k]['type']:
+            #         ax = ax_r[k.split('_')[0]]
+            #         if x_plot[k]['type'] in ['exp_r', 'exp_r_conspire']:
+            #             x_plot[k]['t_range'] = np.arange(
+            #                 x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
+            #             x_plot[x_plot[k]['denom'][0]+'_'
+            #                    + sp]['t_range'] = x_plot[k]['t_range']
+            #             x_plot[x_plot[k]['denom'][1]+'_'
+            #                    + sp]['t_range'] = x_plot[k]['t_range']
+            #             d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
+            #                    x_plot[x_plot[k]['denom'][1]+'_'+sp]]
+            #             fit_funcs.corr_functions.eff_mass(
+            #                 x_plot[k], fit.p, ax, color=x_plot[k]['color'], denom_x=d_x)
+            #             x_plot[k]['t_range'] = np.arange(
+            #                 x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
+            #             x_plot[x_plot[k]['denom'][0]+'_'
+            #                    + sp]['t_range'] = x_plot[k]['t_range']
+            #             x_plot[x_plot[k]['denom'][1]+'_'
+            #                    + sp]['t_range'] = x_plot[k]['t_range']
+            #             d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
+            #                    x_plot[x_plot[k]['denom'][1]+'_'+sp]]
+            #             fit_funcs.corr_functions.eff_mass(
+            #                 x_plot[k], fit.p, ax, color='k', alpha=.1, denom_x=d_x)
+            #         else:
+            #             x_plot[k]['t_range'] = np.arange(
+            #                 x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
+            #             fit_funcs.corr_functions.eff_mass(
+            #                 x_plot[k], fit.p, ax, color=x_plot[k]['color'])
+            #             x_plot[k]['t_range'] = np.arange(
+            #                 x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
+            #             fit_funcs.corr_functions.eff_mass(
+            #                 x_plot[k], fit.p, ax, color='k', alpha=.1)
 
-        if args.save_figs:
-            for k in states:
-                n_s = str(fp.corr_lst[k]['n_state'])
-                plt.figure('m_'+k)
-                plt.savefig('figures/'+k+'_meff_ns'
-                            + n_s+'.pdf', transparent=True)
-                plt.figure('z_'+k)
-                plt.savefig('figures/'+k+'_zeff_ns'
-                            + n_s+'.pdf', transparent=True)
-                if 'exp_r' in fp.corr_lst[k]['type']:
-                    plt.figure('r_'+k)
-                    plt.savefig('figures/'+k+'_ratio_meff_ns'
-                                + n_s+'.pdf', transparent=True)
+        if args.eff and args.scale and args.save_figs:
+            plot.plot_eff_fit(states, fp, x_fit, scale,save_figs=True)
+            # for k in ax_meff:
+            #     s, units = float(args.scale[0]), args.scale[1]
+            #     axr = ax_meff[k].twinx()
+            #     print(k, ax_meff[k].get_ylim())
+            #     print(ax_meff[k].get_yticks())
+            #     axr.set_ylim(ax_meff[k].get_ylim()[0]*s,
+            #                  ax_meff[k].get_ylim()[1]*s)
+            #     axr.set_yticks([s*t for t in ax_meff[k].get_yticks()[:-1]])
+            #     if units in ['GeV', 'gev']:
+            #         axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
+            #     else:
+            #         axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
+            #     axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
+            #                    (units), fontsize=20)
+
+        #if args.save_figs:
+            # for k in states:
+            #     n_s = str(fp.corr_lst[k]['n_state'])
+            #     plt.figure('m_'+k)
+            #     plt.savefig('figures/'+k+'_meff_ns'
+            #                 + n_s+'.pdf', transparent=True)
+            #     plt.figure('z_'+k)
+            #     plt.savefig('figures/'+k+'_zeff_ns'
+            #                 + n_s+'.pdf', transparent=True)
+            #     if 'exp_r' in fp.corr_lst[k]['type']:
+            #         plt.figure('r_'+k)
+            #         plt.savefig('figures/'+k+'_ratio_meff_ns'
+            #                     + n_s+'.pdf', transparent=True)
 
         if args.bs:
             # make sure results dir exists

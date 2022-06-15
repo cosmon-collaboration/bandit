@@ -25,7 +25,7 @@ corr_lst = {
         'n_state'  :3,
         'T'        :96,
         't_range'  :np.arange(8,48),
-        't_sweep'  :range(2,28),
+        't_sweep'  :range(3,28),
         'n_sweep'  :range(1,6),
         'eff_ylim' :[0.133,0.1349]
     },
