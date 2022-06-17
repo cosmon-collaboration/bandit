@@ -8,7 +8,7 @@ import lsqfit
 import fitter.corr_functions as cf
 fit_funcs = cf.FitCorr()
 
-def make_eff_plots(states, fp,x_fit,priors,gv_data,fit,save_figs,scale,show_fit):
+def make_eff_plots(states, fp, x_fit, fit, gv_data, priors, scale, save_figs,show_fit ):
     ''' Make dictionary of effective mass, and effective overlap factor plots
         states: list of states to make effective plots for
 
@@ -144,7 +144,7 @@ def make_eff_plots(states, fp,x_fit,priors,gv_data,fit,save_figs,scale,show_fit)
                     x_plot[k], fit.p, ax, color='k', alpha=.1)
 
     for k in ax_meff:
-        s, units = float(args.scale[0]), args.scale[1]
+        s, units = float(scale[0], scale[1])
         axr = ax_meff[k].twinx()
         print(k, ax_meff[k].get_ylim())
         print(ax_meff[k].get_yticks())
@@ -158,7 +158,19 @@ def make_eff_plots(states, fp,x_fit,priors,gv_data,fit,save_figs,scale,show_fit)
         axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
                        (units), fontsize=20)
 
-
+    if save_figs:
+        for k in states:
+            n_s = str(fp.corr_lst[k]['n_state'])
+            plt.figure('m_'+k)
+            plt.savefig('figures/'+k+'_meff_ns'
+                        + n_s+'.pdf', transparent=True)
+            plt.figure('z_'+k)
+            plt.savefig('figures/'+k+'_zeff_ns'
+                        + n_s+'.pdf', transparent=True)
+            if 'exp_r' in fp.corr_lst[k]['type']:
+                plt.figure('r_'+k)
+                plt.savefig('figures/'+k+'_ratio_meff_ns'
+                            + n_s+'.pdf', transparent=True)
 
 
 

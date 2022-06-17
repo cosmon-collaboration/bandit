@@ -135,7 +135,7 @@ def main():
 
     if args.eff:
         
-        plot.make_eff_plots(states=states,fp=fp,x_fit=None,priors=priors,gv_data=gv_data, fit=None,scale=args.scale,show_fit=False)
+        plot.make_eff_plots(states=states,fp=fp,x_fit=None,priors=priors,gv_data=gv_data, fit=None,scale=args.scale,show_fit=False,save_figs=args.save_figs)
         plt.ion()
 
     # set up svdcut if added
