@@ -8,7 +8,7 @@ import lsqfit
 import fitter.corr_functions as cf
 fit_funcs = cf.FitCorr()
 
-def make_eff_plots(states, fp,x_fit,priors,gv_data,fit,scale=True,show_fit=True):
+def make_eff_plots(states, fp,x_fit,priors,gv_data,fit,save_figs,scale,show_fit):
     ''' Make dictionary of effective mass, and effective overlap factor plots
         states: list of states to make effective plots for
 
@@ -142,6 +142,23 @@ def make_eff_plots(states, fp,x_fit,priors,gv_data,fit,scale=True,show_fit=True)
                     x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
                 fit_funcs.corr_functions.eff_mass(
                     x_plot[k], fit.p, ax, color='k', alpha=.1)
+
+    for k in ax_meff:
+        s, units = float(args.scale[0]), args.scale[1]
+        axr = ax_meff[k].twinx()
+        print(k, ax_meff[k].get_ylim())
+        print(ax_meff[k].get_yticks())
+        axr.set_ylim(ax_meff[k].get_ylim()[0]*s,
+                     ax_meff[k].get_ylim()[1]*s)
+        axr.set_yticks([s*t for t in ax_meff[k].get_yticks()[:-1]])
+        if units in ['GeV', 'gev']:
+            axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
+        else:
+            axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
+        axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
+                       (units), fontsize=20)
+
+
 
 
 
@@ -343,11 +360,12 @@ save_figs):
             x_tmp[k] = x[k].copy()
 
         fits = {}
-        for ti in tmin:scale
-        x_tmp[k]['t_range'] = np.arange(ti, x[k]['t_range'][-1]+1)
+        for ti in tmin:
+            for k in x_tmp:
+                x_tmp[k]['t_range'] = np.arange(ti, x[k]['t_range'][-1]+1)
 
-        y_tmp = {k: v[x_tmp[k]['t_range']]
-                        for (k, v) in gv_data.items() if k in x_tmp}
+            y_tmp = {k: v[x_tmp[k]['t_range']]
+                    for (k, v) in gv_data.items() if k in x_tmp}
         if svd_test:
             y_chop = dict()
             for d in y_tmp:
@@ -372,7 +390,7 @@ save_figs):
                 if int(k.split('_')[-1].split(')')[0]) < ns:
                     p_sweep[k] = p[k]
             p0 = {k: v.mean for (k, v) in priors.items()}
-            #print('t_min = %d  ns = %d' %(ti,ns))
+            print('t_min = %d  ns = %d' %(ti,ns))
             sys.stdout.write(
                 'sweeping t_min = %d n_s = %d\r' % (ti, ns))
             sys.stdout.flush()
@@ -394,16 +412,14 @@ save_figs):
         #if 'eff_ylim' in x_tmp[list(x_tmp.keys())[0]]:
         if 'eff_ylim' in x_tmp.keys():
             ylim = x_tmp[k]['eff_ylim']
-        ylim = None
-        plot_stability(fits, tmin, n_states, tn_opt,
+        #ylim = None
+            plot_stability(fits, tmin, n_states, tn_opt,
                             state, ylim=ylim, save=save_figs)
         if es_stability:
             for i_n in range(1, n_states[-1]):
-                plot_stability(f_tmp, tmin, n_states, tn_opt, state,
+                plot_stability(fits, tmin, n_states, tn_opt, state,
                                     ylim=ylim, save=save_figs, n_plot=i_n, scale=scale)
     print('')
-
-
 
 def plot_stability(fits, tmin, n_states, tn_opt, state,
                    ylim=None, diff=False, save=True, n_plot=0, scale=None):
@@ -463,7 +479,7 @@ def plot_stability(fits, tmin, n_states, tn_opt, state,
                 else:
                     mfc = 'None'
                     color = colors[ns]
-                print(fits[(ti, ns)].logGBF)
+                #print(fits[(ti, ns)].logGBF)
                 logGBF.append(fits[(ti, ns)].logGBF)
                 if diff:
                     e0 = fits[(ti, ns)].p[state+'_'+kk+'_'+nn] - fits[(ti, ns)
@@ -473,6 +489,7 @@ def plot_stability(fits, tmin, n_states, tn_opt, state,
                     if n_plot > 0:
                         for i_n in range(1, n_plot+1):
                             e0 += fits[(ti, ns)].p[state+'_'+kk+'_'+str(i_n)]
+                            print(e0)
                 ax_e0.errorbar(ti + 0.1*(ns-5), e0.mean, yerr=e0.sdev,
                                marker=markers[ns], color=color, mfc=mfc, linestyle='None', label=lbl)
                 ax_Q.plot(ti + 0.1*(ns-5), fits[(ti, ns)].Q,

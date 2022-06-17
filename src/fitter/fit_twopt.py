@@ -26,7 +26,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='Perform analysis of two-point correlation function')
     parser.add_argument('fit_params',    help='input file to specify fit')
-    parser.add_argument('--fit',         default=False, action='store_true',
+    parser.add_argument('--fit',         default=True, action='store_true',
                         help=            'do fit? [%(default)s]')
     parser.add_argument('--svdcut',      type=float, help='add svdcut to fit')
     parser.add_argument('--svd_test',    default=True, action='store_false',
@@ -36,7 +36,7 @@ def main():
                         help=            'fold data about T/2? [%(default)s]')
     parser.add_argument('-b', '--block', default=1, type=int,
                         help=            'specify bin/blocking size in terms of saved configs')
-    parser.add_argument('--eff',         default=False, action='store_true',
+    parser.add_argument('--eff',         default=True, action='store_true',
                         help=            'plot effective mass and z_eff data? [%(default)s]')
     parser.add_argument('--scale',       default=None, nargs=2,
                         help=            'add right axis with physical scale specified by input value [scale, units]')
@@ -50,7 +50,7 @@ def main():
                         help=            'add verbosity [%(default)s]')
     parser.add_argument('--verbose_fit', default=False, action='store_true',
                         help=            'print y vs f(x,p) also? [%(default)s]')
-    parser.add_argument('--save_figs',   default=False, action='store_true',
+    parser.add_argument('--save_figs',   default=True, action='store_true',
                         help=            'save figs? [%(default)s]')
     parser.add_argument('--bs',          default=False, action='store_true',
                         help=            'run bootstrap fit? [%(default)s]')
@@ -150,81 +150,11 @@ def main():
             has_svd = False
 
     if args.stability:
-        plot.make_stability_plot(states=states,x=x,fp=fp, priors=priors, gv_data=gv_data,scale=args.scale, stability=args.stability, svd_test=args.svd_test,
-        svd_nbs=args.svd_nbs,data_cfg = data_cfg,n_states=n_states,es_stability=args.es_stability,save_figs=args.save_figs)
+        plot.make_stability_plot(
+        states=states,x=x,fp=fp,  priors=priors, gv_data=gv_data, stability=args.stability, 
+        scale = args.scale, svd_test=args.svd_test, data_cfg = data_cfg,n_states=n_states, 
+        svd_nbs=args.svd_nbs, es_stability=args.es_stability,save_figs=args.save_figs)
 
-        # p = copy.deepcopy(fp.priors)
-
-        # for state in args.stability:
-        #     if 't_sweep' in fp.corr_lst[state]:
-        #         tmin = fp.corr_lst[state]['t_sweep']
-        #     else:
-        #         tmin = range(2, x[state]['t_range'][-1])
-        #     if 'n_sweep' in fp.corr_lst[state]:
-        #         n_states = fp.corr_lst[state]['n_sweep']
-        #     else:
-        #         n_states = range(1, 6)
-        #     tn_opt = (fp.corr_lst[state]['t_range'][0],
-        #               fp.corr_lst[state]['n_state'])
-        #     x_tmp = dict()
-        #     for k in [kk for kk in x if kk.split('_')[0] == state]:
-        #         x_tmp[k] = x[k].copy()
-
-        #     fits = {}
-        #     for ti in tmin:scale
-        #     x_tmp[k]['t_range'] = np.arange(ti, x[k]['t_range'][-1]+1)
-
-        #     y_tmp = {k: v[x_tmp[k]['t_range']]
-        #                  for (k, v) in gv_data.items() if k in x_tmp}
-        #     if args.svd_test:
-        #         y_chop = dict()
-        #         for d in y_tmp:
-        #             if d in x_tmp:
-        #                 y_chop[d] = data_cfg[d][:,x_tmp[d]['t_range']]
-        #         s = gv.dataset.svd_diagnosis(y_chop, nbstrap=args.svd_nbs)
-        #         svdcut = s.svdcut
-        #         has_svd = True
-        #     for k in x_tmp:
-        #         if k.split('_')[0] not in states:
-        #             y_tmp.pop(k)
-        #     if ti == tmin[0]:
-        #         print([k for k in y_tmp])
-        #     for ns in n_states:
-        #         xx = copy.deepcopy(x_tmp)
-        #         for k in xx:
-        #             ''' NOTE  - we are chaning n_s for pi, D and Dpi all together '''
-        #             xx[k]['n_state'] = ns
-        #         fit_funcs = cf.FitCorr()
-        #         p_sweep = {}
-        #         for k in p:
-        #             if int(k.split('_')[-1].split(')')[0]) < ns:
-        #                 p_sweep[k] = p[k]
-        #         p0 = {k: v.mean for (k, v) in priors.items()}
-        #         #print('t_min = %d  ns = %d' %(ti,ns))
-        #         sys.stdout.write(
-        #             'sweeping t_min = %d n_s = %d\r' % (ti, ns))
-        #         sys.stdout.flush()
-        #         if has_svd:
-        #             f_tmp = lsqfit.nonlinear_fit(data=(xx, y_tmp),
-        #                                             prior=p_sweep, p0=p0,
-        #                                             fcn=fit_funcs.fit_function, svdcut=svdcut)
-        #         else:
-        #             f_tmp = lsqfit.nonlinear_fit(data=(xx, y_tmp),
-        #                                             prior=p_sweep, p0=p0,
-        #                                             fcn=fit_funcs.fit_function)
-        #         fits[(ti, ns)] = f_tmp
-
-        #     ylim = None
-        #     if 'eff_ylim' in x_tmp[list(x_tmp.keys())[0]]:
-        #         ylim = x_tmp[k]['eff_ylim']
-        #     ylim = None
-        #     plot.plot_stability(fits, tmin, n_states, tn_opt,
-        #                         state, ylim=ylim, save=args.save_figs)
-        #     if args.es_stability:
-        #         for i_n in range(1, n_states[-1]):
-        #             plot.plot_stability(fits, tmin, n_states, tn_opt, state,
-        #                                 ylim=ylim, save=args.save_figs, n_plot=i_n, scale=args.scale)
-        # print('')
 
     if args.fit:
         fit_funcs = cf.FitCorr()
@@ -265,7 +195,8 @@ def main():
             run_server(fit, name="c51 Two-Point Fitter")
 
         if args.eff:
-            plot.make_eff_plots(states, fp, x_fit=x_fit, fit=fit,gv_data=gv_data, priors=priors, scale=args.scale,show_fit=True)
+            plot.make_eff_plots(states, fp, x_fit=x_fit, fit=fit,gv_data=gv_data, priors=priors, 
+            scale=args.scale,show_fit=True,save_figs=args.save_figs)
 
             # x_plot = copy.deepcopy(x_fit)
             # for k in x_plot:
@@ -305,19 +236,7 @@ def main():
             #             d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
             #                    x_plot[x_plot[k]['denom'][1]+'_'+sp]]
             #             fit_funcs.corr_functions.eff_mass(
-            #                 x_plot[k], fit.p, ax, color='k', alpha=.1, denom_x=d_x)
-            #         else:
-            #             x_plot[k]['t_range'] = np.arange(
-            #                 x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-            #             fit_funcs.corr_functions.eff_mass(
-            #                 x_plot[k], fit.p, ax, color=x_plot[k]['color'])
-            #             x_plot[k]['t_range'] = np.arange(
-            #                 x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-            #             fit_funcs.corr_functions.eff_mass(
-            #                 x_plot[k], fit.p, ax, color='k', alpha=.1)
-
-        if args.eff and args.scale and args.save_figs:
-            plot.plot_eff_fit(states, fp, x_fit, scale,save_figs=True)
+            #                 x_plot[k], fit.p, ax, color='k'
             # for k in ax_meff:
             #     s, units = float(args.scale[0]), args.scale[1]
             #     axr = ax_meff[k].twinx()
