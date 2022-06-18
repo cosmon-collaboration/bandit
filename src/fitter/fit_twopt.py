@@ -1,6 +1,7 @@
 import fitter.plotting as plot
 import fitter.corr_functions as cf
 import fitter.load_data as ld
+import fitter.bootstrap as bs 
 #import fitter.fit_analyzer as analyze
 import lsqfit
 import gvar as gv
@@ -50,7 +51,7 @@ def main():
                         help=            'add verbosity [%(default)s]')
     parser.add_argument('--verbose_fit', default=False, action='store_true',
                         help=            'print y vs f(x,p) also? [%(default)s]')
-    parser.add_argument('--save_figs',   default=True, action='store_true',
+    parser.add_argument('--save_figs',   default=False, action='store_true',
                         help=            'save figs? [%(default)s]')
     parser.add_argument('--bs',          default=False, action='store_true',
                         help=            'run bootstrap fit? [%(default)s]')
@@ -134,8 +135,7 @@ def main():
                 priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
 
     if args.eff:
-        
-        plot.make_eff_plots(states=states,fp=fp,x_fit=None,priors=priors,gv_data=gv_data, fit=None,scale=args.scale,show_fit=False,save_figs=args.save_figs)
+        plot.make_eff_plots(states=states,fp=fp,x_fit=None,priors=priors,gv_data=gv_data,fit=None, scale=args.scale,show_fit=False,save_figs=args.save_figs)
         plt.ion()
 
     # set up svdcut if added
@@ -151,7 +151,7 @@ def main():
 
     if args.stability:
         plot.make_stability_plot(
-        states=states,x=x,fp=fp,  priors=priors, gv_data=gv_data, stability=args.stability, 
+        states=states,x=x,fp=fp, priors=priors, gv_data=gv_data, stability=args.stability, 
         scale = args.scale, svd_test=args.svd_test, data_cfg = data_cfg,n_states=n_states, 
         svd_nbs=args.svd_nbs, es_stability=args.es_stability,save_figs=args.save_figs)
 
@@ -194,180 +194,16 @@ def main():
             from lsqfitgui import run_server
             run_server(fit, name="c51 Two-Point Fitter")
 
+        x_plot = copy.deepcopy(x_fit)
+        #generate eff mass plot with fit overlay
         if args.eff:
             plot.make_eff_plots(states, fp, x_fit=x_fit, fit=fit,gv_data=gv_data, priors=priors, 
-            scale=args.scale,show_fit=True,save_figs=args.save_figs)
+                                scale=args.scale,show_fit=True,save_figs=args.save_figs)
 
-            # x_plot = copy.deepcopy(x_fit)
-            # for k in x_plot:
-            #     sp = k.split('_')[-1]
-            #     ax = ax_meff[k.split('_')[0]]
-            #     if 't0' in x_fit[k]:
-            #         t0 = x_fit[k]['t0']
-            #     else:
-            #         t0 = 0
-            #     x_plot[k]['t_range'] = np.arange(
-            #         x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-            #     fit_funcs.corr_functions.eff_mass(
-            #         x_plot[k], fit.p, ax, t0=t0, color=x_plot[k]['color'])
-            #     x_plot[k]['t_range'] = np.arange(
-            #         x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-            #     fit_funcs.corr_functions.eff_mass(
-            #         x_plot[k], fit.p, ax, t0=t0, color='k', alpha=.1)
-            #     if 'exp_r' in x_plot[k]['type']:
-            #         ax = ax_r[k.split('_')[0]]
-            #         if x_plot[k]['type'] in ['exp_r', 'exp_r_conspire']:
-            #             x_plot[k]['t_range'] = np.arange(
-            #                 x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-            #             x_plot[x_plot[k]['denom'][0]+'_'
-            #                    + sp]['t_range'] = x_plot[k]['t_range']
-            #             x_plot[x_plot[k]['denom'][1]+'_'
-            #                    + sp]['t_range'] = x_plot[k]['t_range']
-            #             d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
-            #                    x_plot[x_plot[k]['denom'][1]+'_'+sp]]
-            #             fit_funcs.corr_functions.eff_mass(
-            #                 x_plot[k], fit.p, ax, color=x_plot[k]['color'], denom_x=d_x)
-            #             x_plot[k]['t_range'] = np.arange(
-            #                 x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-            #             x_plot[x_plot[k]['denom'][0]+'_'
-            #                    + sp]['t_range'] = x_plot[k]['t_range']
-            #             x_plot[x_plot[k]['denom'][1]+'_'
-            #                    + sp]['t_range'] = x_plot[k]['t_range']
-            #             d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
-            #                    x_plot[x_plot[k]['denom'][1]+'_'+sp]]
-            #             fit_funcs.corr_functions.eff_mass(
-            #                 x_plot[k], fit.p, ax, color='k'
-            # for k in ax_meff:
-            #     s, units = float(args.scale[0]), args.scale[1]
-            #     axr = ax_meff[k].twinx()
-            #     print(k, ax_meff[k].get_ylim())
-            #     print(ax_meff[k].get_yticks())
-            #     axr.set_ylim(ax_meff[k].get_ylim()[0]*s,
-            #                  ax_meff[k].get_ylim()[1]*s)
-            #     axr.set_yticks([s*t for t in ax_meff[k].get_yticks()[:-1]])
-            #     if units in ['GeV', 'gev']:
-            #         axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
-            #     else:
-            #         axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
-            #     axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
-            #                    (units), fontsize=20)
-
-        #if args.save_figs:
-            # for k in states:
-            #     n_s = str(fp.corr_lst[k]['n_state'])
-            #     plt.figure('m_'+k)
-            #     plt.savefig('figures/'+k+'_meff_ns'
-            #                 + n_s+'.pdf', transparent=True)
-            #     plt.figure('z_'+k)
-            #     plt.savefig('figures/'+k+'_zeff_ns'
-            #                 + n_s+'.pdf', transparent=True)
-            #     if 'exp_r' in fp.corr_lst[k]['type']:
-            #         plt.figure('r_'+k)
-            #         plt.savefig('figures/'+k+'_ratio_meff_ns'
-            #                     + n_s+'.pdf', transparent=True)
-
+        # run bootstrapping utility 
         if args.bs:
-            # make sure results dir exists
-            if not os.path.exists('bs_results'):
-                os.makedirs('bs_results')
-            if len(args.bs_results.split('/')) == 1:
-                bs_file = 'bs_results/'+args.bs_results
-            else:
-                bs_file = args.bs_results
-            # check if we already wrote this dataset
-            have_bs = False
-            if os.path.exists(bs_file):
-                #with h5.open_file(bs_file,'r') as f5:
-                with h5py.File(bs_file, 'r') as f5:
-                    if args.bs_path in f5:
-                        if len(f5[args.bs_path]) > 0 and not args.overwrite:
-                            have_bs = True
-                            print(
-                                'you asked to write bs results to an existing dset and overwrite =', args.overwrite)
-            if not have_bs:
-                print('beginning Nbs=%d bootstrap fits' % args.Nbs)
-                import bootstrap as bs
-
-                # let us use the fit posterior to set the initial guess for bs loop
-                p0_bs = dict()
-                for k in fit.p:
-                    p0_bs[k] = fit.p[k].mean
-
-                if not args.bs_seed and 'bs_seed' not in dir(fp):
-                    tmp = input('you have not passed a BS seed nor is it defined in the input file\nenter a seed or hit return for none')
-                    if not tmp:
-                        bs_seed = None
-                    else:
-                        bs_seed = tmp
-                elif 'bs_seed' in dir(fp):
-                    bs_seed = fp.bs_seed
-                if args.bs_seed:
-                    if args.verbose:
-                        print('WARNING: you are overwriting the bs_seed from the input file')
-                    bs_seed = args.bs_seed
-
-                # make BS data
-                corr_bs = {}
-                for k in data_cfg:
-                    corr_bs[k] = bs.bs_corrs(data_cfg[k], Nbs=args.Nbs, seed=bs_seed, return_mbs=True)
-
-                # make BS list for priors
-                p_bs_mean = dict()
-                for k in priors:
-                    p_bs_mean[k] = bs.bs_prior(args.Nbs, mean=priors[k].mean,
-                                            sdev=priors[k].sdev, seed=bs_seed+'_'+k)
-
-                # set up posterior lists of bs results
-                post_bs = dict()
-                for k in fit.p:
-                    post_bs[k] = []
-
-                for bs in range(args.Nbs):
-                    sys.stdout.write('%4d / %d\r' % (bs, args.Nbs))
-                    sys.stdout.flush()
-
-                    ''' all gvar's created in this switch are destroyed at restore_gvar [they are out of scope] '''
-                    gv.switch_gvar()
-
-                    bs_data = dict()
-                    for k in corr_bs:
-                        bs_data[k] = corr_bs[k][bs]
-                    bs_gv = gv.dataset.avg_data(bs_data)
-                    y_bs = {k: v[x_fit[k]['t_range']]
-                            for (k, v) in bs_gv.items() if k in fit_lst}
-                    p_bs = dict()
-                    for k in p_bs_mean:
-                        p_bs[k] = gv.gvar(p_bs_mean[k][bs], priors[k].sdev)
-                    # do the fit
-                    if has_svd:
-                        fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
-                                                      fcn=fit_funcs.fit_function, svdcut=svdcut)
-                    else:
-                        fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
-                                                      fcn=fit_funcs.fit_function)
-
-                    for r in post_bs:
-                        post_bs[r].append(fit_bs.p[r].mean)
-
-                    ''' end of gvar scope used for bootstrap '''
-                    gv.restore_gvar()
-
-                for r in post_bs:
-                    post_bs[r] = np.array(post_bs[r])
-                # write the results
-                with h5py.File(bs_file, 'a') as f5:
-                    try:
-                        f5.create_group(args.bs_path)
-                    except Exception as e:
-                        print(e)
-                    for r in post_bs:
-                        if len(post_bs[r]) > 0:
-                            if r in f5[args.bs_path]:
-                                del f5[args.bs_path+'/'+r]
-                            f5.create_dataset(
-                                args.bs_path+'/'+r, data=post_bs[r])
-
-                print('DONE')
+            bs.run_bs(bs_results=args.bs_results, bs_path=args.bs_path, overwrite=args.overwrite,
+                      Nbs=args.Nbs, fit=fit, bs_seed=args.bs_seed, fp=fp, verbose=args.verbose)
 
         if args.svd_test:
             fig = plt.figure('svd_diagnosis', figsize=(7, 4))

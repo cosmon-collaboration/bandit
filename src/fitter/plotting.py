@@ -84,17 +84,18 @@ def make_eff_plots(states, fp, x_fit, fit, gv_data, priors, scale, save_figs,sho
     ax_zeff[k].legend(fontsize=20, loc=1)
 
     if show_fit is True:
-        x = copy.deepcopy(fp.x)
+        x = fp.x
         x_fit = dict()
-        fit_lst = [k for k in x if k.split('_')[0] in states]
-        for k in fit_lst:
-            x_fit[k] = x[k]
+        fit_lst = [j for j in x if j.split('_')[0] in states]
+        for j in fit_lst:
+            x_fit[j] = x[j]
 
-        x_plot = copy.deepcopy(x_fit)
+        x_plot = x_fit
+        print(x_plot)
         print(x_plot.keys())
-        for j in x_plot.keys():
-            print(j)
-            sp = j.split('_')[-1]
+        for k in x_plot.keys():
+            print(k)
+            sp = k.split('_')[-1]
             print(sp)
             ax = ax_meff[k.split('_')[0]]
             print(ax)
@@ -143,20 +144,20 @@ def make_eff_plots(states, fp, x_fit, fit, gv_data, priors, scale, save_figs,sho
                 fit_funcs.corr_functions.eff_mass(
                     x_plot[k], fit.p, ax, color='k', alpha=.1)
 
-    for k in ax_meff:
-        s, units = float(scale[0], scale[1])
-        axr = ax_meff[k].twinx()
-        print(k, ax_meff[k].get_ylim())
-        print(ax_meff[k].get_yticks())
-        axr.set_ylim(ax_meff[k].get_ylim()[0]*s,
-                     ax_meff[k].get_ylim()[1]*s)
-        axr.set_yticks([s*t for t in ax_meff[k].get_yticks()[:-1]])
-        if units in ['GeV', 'gev']:
-            axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
-        else:
-            axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
-        axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
-                       (units), fontsize=20)
+    # for k in ax_meff:
+    #     s, units = float(scale[0]), scale[1]
+    #     axr = ax_meff[k].twinx()
+    #     print(k, ax_meff[k].get_ylim())
+    #     print(ax_meff[k].get_yticks())
+    #     axr.set_ylim(ax_meff[k].get_ylim()[0]*s,
+    #                  ax_meff[k].get_ylim()[1]*s)
+    #     axr.set_yticks([s*t for t in ax_meff[k].get_yticks()[:-1]])
+    #     if units in ['GeV', 'gev']:
+    #         axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
+    #     else:
+    #         axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
+    #     axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
+    #                    (units), fontsize=20)
 
     if save_figs:
         for k in states:
