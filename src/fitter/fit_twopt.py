@@ -135,9 +135,10 @@ def main():
                 priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
 
     if args.eff:
-        plot.make_eff_plots(states=states,fp=fp,x_fit=None,priors=priors,gv_data=gv_data,fit=None, scale=args.scale,show_fit=False,save_figs=args.save_figs)
         plt.ion()
-
+        effective = plot.eff_plots()
+        effective.make_eff_plots(states=states,fp=fp,x_fit=None,priors=priors,gv_data=gv_data,fit=None, scale=args.scale,show_fit=False,save_figs=args.save_figs)
+        
     # set up svdcut if added
     if args.svdcut is not None:
         svdcut = args.svdcut
@@ -150,7 +151,7 @@ def main():
             has_svd = False
 
     if args.stability:
-        plot.make_stability_plot(
+        plot.eff_plots.make_stability_plot(
         states=states,x=x,fp=fp, priors=priors, gv_data=gv_data, stability=args.stability, 
         scale = args.scale, svd_test=args.svd_test, data_cfg = data_cfg,n_states=n_states, 
         svd_nbs=args.svd_nbs, es_stability=args.es_stability,save_figs=args.save_figs)
@@ -197,7 +198,7 @@ def main():
         x_plot = copy.deepcopy(x_fit)
         #generate eff mass plot with fit overlay
         if args.eff:
-            plot.make_eff_plots(states, fp, x_fit=x_fit, fit=fit,gv_data=gv_data, priors=priors, 
+            effective.make_eff_plots(states, fp, x_fit=x_fit, fit=fit,gv_data=gv_data, priors=priors, 
                                 scale=args.scale,show_fit=True,save_figs=args.save_figs)
 
         # run bootstrapping utility 

@@ -12,11 +12,13 @@ fit_funcs = cf.FitCorr()
 
 class Bootstrap(object):
     def __init__(self):
+        # input args to fit_twopt
         self.bs_results = bs_results
         self.bs_path    = bs_path
         self.overwrite  = overwrite
         self.Nbs        = Nbs
         self.fit        = fit
+        self.fit_lst    = fit_lst
         self.bs_seed    = bs_seed
         self.fp         = fp
         self.verbose    = verbose
@@ -25,72 +27,72 @@ class Bootstrap(object):
         if not os.path.exists('bs_results'):
             os.makedirs('bs_results')
         if len(bs_results.split('/')) == 1:
-            bs_file = 'bs_results/'+bs_results
+            bs_file = 'bs_results/'+self.bs_results
         else:
-            bs_file = bs_results
+            bs_file = self.bs_results
         # check if we already wrote this dataset
         have_bs = False
         if os.path.exists(bs_file):
             with h5py.File(bs_file, 'r') as f5:
-                if bs_path in f5:
-                    if len(f5[bs_path]) > 0 and not overwrite:
+                if self.bs_path in f5:
+                    if len(f5[self.bs_path]) > 0 and not overwrite:
                         have_bs = True
                         print(
-                            'you asked to write bs results to an existing dset and overwrite =', overwrite)
+                            'you asked to write bs results to an existing dset and overwrite =', self.overwrite)
         if not have_bs:
             print('beginning Nbs=%d bootstrap fits' % Nbs)
         
         p0_bs = dict()
-        for k in fit.p:
-            p0_bs[k] = fit.p[k].mean
+        for k in self.fit.p:
+            p0_bs[k] = self.fit.p[k].mean
 
-        if not bs_seed and 'bs_seed' not in dir(fp):
+        if not bs_seed and 'bs_seed' not in dir(self.fp):
             tmp = input('you have not passed a BS seed nor is it defined in the input file\nenter a seed or hit return for none')
             if not tmp:
-                bs_seed = None
+                self.bs_seed = None
             else:
-                bs_seed = tmp
+                self.bs_seed = tmp
         elif 'bs_seed' in dir(fp):
-            bs_seed = fp.bs_seed
-        if bs_seed:
-            if verbose:
+            self.bs_seed = self.fp.bs_seed
+        if self.bs_seed:
+            if self.verbose:
                 print('WARNING: you are overwriting the bs_seed from the input file')
-            bs_seed = bs_seed
-        return(p0_bs)
+            bs_seed = self.bs_seed
+        #return(p0_bs)
 
-    def make_bs_data(data_cfg):
+    def make_bs_data(self, data_cfg):
         # make BS data
         corr_bs = {}
         for k in data_cfg:
             corr_bs[k] = bs_corrs(data_cfg[k], Nbs=Nbs, seed=bs_seed, return_mbs=True)
         return corr_bs
 
-    def make_bs_lst_priors(priors):
+    def make_bs_lst_priors(self,priors):
         # make BS list for priors
         p_bs_mean = dict()
         for k in priors:
             p_bs_mean[k] = bs_prior(Nbs, mean=priors[k].mean,
-                                    sdev=priors[k].sdev, seed=bs_seed+'_'+k)
+                                    sdev=priors[k].sdev, seed=self.bs_seed+'_'+k)
 
-    def make_bs_lst_posterior(x_fit,fit_lst,priors,bs_path):
+    def make_bs_lst_posterior(self, x_fit,fit_lst,priors):
         post_bs = dict()
-        for k in fit.p:
+        for k in self.fit.p:
             post_bs[k] = []
 
-        for bs in range(Nbs):
-            sys.stdout.write('%4d / %d\r' % (bs, Nbs))
+        for bs in range(self.Nbs):
+            sys.stdout.write('%4d / %d\r' % (bs, self.Nbs))
             sys.stdout.flush()
 
             ''' all gvar's created in this switch are destroyed at restore_gvar [they are out of scope] '''
             gv.switch_gvar()
 
             bs_data = dict()
-            corr_bs = make_bs_data(data_cfg)
+            corr_bs = make_bs_data(self,data_cfg)
             for k in corr_bs:
                 bs_data[k] = corr_bs[k][bs]
             bs_gv = gv.dataset.avg_data(bs_data)
             y_bs = {k: v[x_fit[k]['t_range']]
-                    for (k, v) in bs_gv.items() if k in fit_lst}
+                    for (k, v) in bs_gv.items() if k in self.fit_lst}
             p_bs = dict()
             for k in p_bs_mean:
                 p_bs[k] = gv.gvar(p_bs_mean[k][bs], priors[k].sdev)
