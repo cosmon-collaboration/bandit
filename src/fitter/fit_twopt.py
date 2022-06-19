@@ -24,6 +24,7 @@ np.seterr(invalid='ignore')
 
 
 def main():
+    # do sys.argv routine here 
     parser = argparse.ArgumentParser(
         description='Perform analysis of two-point correlation function')
     parser.add_argument('fit_params',    help='input file to specify fit')
