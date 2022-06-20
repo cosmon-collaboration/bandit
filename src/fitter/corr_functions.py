@@ -110,6 +110,13 @@ class CorrFunction:
             r += z_snk * z_src * (np.exp(-E_n*t) + np.exp(-E_n*(T-t)))
         return r
 
+    def mres(self, x, p):
+        ''' m_res = midpoint_pseudo / pseudo_pseudo
+            we fit to a constant away from early/late time
+            m_res = p[mres_l]
+        '''
+        return p[x['state']]*np.ones_like(x['t_range'])
+
     def two_h_ratio(self, x, p):
         ''' This model fits the g.s. as
 
@@ -230,6 +237,9 @@ class CorrFunction:
                 corr = self.exp_gs(x, p)
                 corr_p = self.exp_gs(xp, p)
             meff = 1/tau * np.log(corr / corr_p)
+        elif x['type'] == 'mres':
+            corr = self.mres(x,p)
+            meff = corr
         else:
             sys.exit('unrecognized type, %s' % x['type'])
 
@@ -266,6 +276,8 @@ class FitCorr(object):
                 r[k] = self.corr_functions.cosh(x[k], p)
             elif x[k]['type'] == 'cosh_const':
                 r[k] = self.corr_functions.cosh_const(x[k], p)
+            elif x[k]['type'] == 'mres':
+                r[k] = self.corr_functions.mres(x[k], p)
             elif x[k]['type'] == 'exp_open':
                 r[k] = self.corr_functions.exp_open(x[k], p)
             elif x[k]['type'] == 'exp_gs':
