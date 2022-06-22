@@ -25,7 +25,7 @@ corr_lst = {
         # fit params
         'n_state'  :3,
         'T'        :96,
-        't_range'  :np.arange(8,48),
+        't_range'  :np.arange(5,48),
         't_sweep'  :range(2,28),
         'n_sweep'  :range(1,6),
         'eff_ylim' :[0.133,0.1349]
@@ -55,7 +55,8 @@ corr_lst = {
     # MRES_L
     'mres-L':{
         'corr_array':False,
-        'dsets'     :['a09m310/mres-L_%(SNK)s%(SRC)s'],
+        'dset_MP'   :['a09m310/mres-L_MP'],
+        'dset_PP'   :['a09m310/mres-L_PP'],
         'weights'   :[1],
         't_reverse' :[False],
         'fold'      :True,
@@ -73,7 +74,8 @@ corr_lst = {
     # MRES_S
     'mres-S':{
         'corr_array':False,
-        'dsets'     :['a09m310/mres-S_%(SNK)s%(SRC)s'],
+        'dset_MP'   :['a09m310/mres-S_MP'],
+        'dset_PP'   :['a09m310/mres-S_PP'],
         'weights'   :[1],
         't_reverse' :[False],
         'fold'      :True,
