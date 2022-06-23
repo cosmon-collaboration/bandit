@@ -271,7 +271,8 @@ class FitCorr(object):
         r = dict()
         for k in x:
             if x[k]['type'] == 'exp':
-                r[k] = self.corr_functions.exp(x[k], p)
+                #r[k] = self.corr_functions.exp(x[k], p)
+                r[k] = getattr(self.corr_functions, x[k]['type'])(x[k],p)
             elif x[k]['type'] == 'cosh':
                 r[k] = self.corr_functions.cosh(x[k], p)
             elif x[k]['type'] == 'cosh_const':
