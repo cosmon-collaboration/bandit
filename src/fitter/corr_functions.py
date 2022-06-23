@@ -270,21 +270,9 @@ class FitCorr(object):
     def fit_function(self, x, p):
         r = dict()
         for k in x:
-            if x[k]['type'] == 'exp':
-                #r[k] = self.corr_functions.exp(x[k], p)
+            if x[k]['type'] in dir(self.corr_functions):
                 r[k] = getattr(self.corr_functions, x[k]['type'])(x[k],p)
-            elif x[k]['type'] == 'cosh':
-                r[k] = self.corr_functions.cosh(x[k], p)
-            elif x[k]['type'] == 'cosh_const':
-                r[k] = self.corr_functions.cosh_const(x[k], p)
-            elif x[k]['type'] == 'mres':
-                r[k] = self.corr_functions.mres(x[k], p)
-            elif x[k]['type'] == 'exp_open':
-                r[k] = self.corr_functions.exp_open(x[k], p)
-            elif x[k]['type'] == 'exp_gs':
-                r[k] = self.corr_functions.exp_gs(x[k], p)
-            elif x[k]['type'] == 'exp_r_ind':
-                r[k] = self.corr_functions.exp(x[k], p)
+            # NOTE: we should move exp_r and exp_r_conspire into corr_functions
             elif x[k]['type'] == 'exp_r':
                 sp = k.split('_')[-1]
                 r[k] = self.corr_functions.two_h_ratio(x[k], p)
@@ -299,4 +287,6 @@ class FitCorr(object):
                     self.corr_functions.exp(x[x[k]['denom'][0]+'_'+sp], p)
                 r[k] = r[k] / \
                     self.corr_functions.exp(x[x[k]['denom'][1]+'_'+sp], p)
+            else:
+                sys.exit('Unrecognized fit model, %s' %x[k]['type'])
         return r
