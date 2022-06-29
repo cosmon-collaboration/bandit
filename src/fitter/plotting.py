@@ -17,18 +17,44 @@ class eff_plots():
         self.ax_meff = {}
         self.ax_zeff = {}
         self.ax_r = {}
-        self.states = states
-        self.fp = fp 
-        self.x_fit = x_fit
-        self.fit = fit
-        self.gv_data = gv_data 
-        self.priors = priors
-        self.scale = scale 
-        self.save_figs = True 
-        self.show_fit = True 
+
+    def make_fit_params(fp,states,gv_data):
+        x = copy.deepcopy(fp.x)
+        y = {k: v[x[k]['t_range']]
+            for (k, v) in gv_data.items() if k.split('_')[0] in states}
+        for k in y:
+            if 'exp_r' in x[k]['type']:
+                sp = k.split('_')[-1]
+                y[k] = y[k] / gv_data[x[k]['denom'][0]+'_'+sp][x[k]['t_range']]
+                y[k] = y[k] / gv_data[x[k]['denom'][1]+'_'+sp][x[k]['t_range']]
+        if any(['mres' in k for k in y]):
+            mres_lst = [k.split('_')[0] for k in y if 'mres' in k]
+            mres_lst = list(set(mres_lst))
+            for k in mres_lst:
+                y[k] = y[k+'_MP'] / y[k+'_PP']
+        
+        n_states = dict()
+        for state in states:
+            for k in x:
+                if state in k:
+                    if state in k and 'mres' not in k:
+                        n_states[state] = x[k]['n_state']
+        priors = dict()
+        for k in fp.priors:
+            for state in states:
+                if 'mres' not in k:
+                    k_n = int(k.split('_')[-1].split(')')[0])
+                    if state == k.split('(')[-1].split('_')[0] and k_n < n_states[state]:
+                        priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
+                else:
+                    mres = k.split('_')[0]
+                    if mres in states:
+                        priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
+        return(x,y,n_states,priors)
 
 
-    def make_eff_plots(self):
+
+    def make_eff_plots(self,states,fp,x_fit,priors,gv_data,fit, scale,show_fit,save_figs):
         ''' Make dictionary of effective mass, and effective overlap factor plots
 
             Attributes:
@@ -36,7 +62,7 @@ class eff_plots():
             - corr_lst: 
             - priors: 
         '''
-        for k in self.states:
+        for k in states:
             clrs = fp.corr_lst[k]['colors']
             if 't0' in fp.corr_lst[k]:
                 t0 = fp.corr_lst[k]['t0']
@@ -49,7 +75,6 @@ class eff_plots():
         else:
             self.ax_meff[k] = plt.axes([0.15, 0.15, 0.84, 0.84])
         if fp.corr_lst[k]['type'] not in ['exp_r', 'exp_r_conspire']:
-            p = priors[k+'_E_0']
             if fp.corr_lst[k]['type'] == 'mres':
                 p = priors[k]
             else:
@@ -57,11 +82,8 @@ class eff_plots():
         else:
             d1, d2 = fp.corr_lst[k]['denom']
             p = priors[d1+'_E_0'] + priors[d2+'_E_0'] + priors[k+'_dE_0_0']
-
         self.ax_meff[k].axhspan(p.mean-p.sdev, p.mean
                             + p.sdev, color='k', alpha=.2)
-        eff_plots.plot_eff(self.ax_meff[k], gv_data, k,
-                        mtype=fp.corr_lst[k]['type'], colors=clrs, offset=t0)
         if 'mres' not in k:
             eff_plots.plot_eff(self.ax_meff[k], gv_data, k,
                             mtype=fp.corr_lst[k]['type'], colors=clrs, offset=t0)
@@ -112,6 +134,7 @@ class eff_plots():
                 r'$z_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
             self.ax_zeff[k].legend(fontsize=20, loc=1)
 
+        # Overlay fit on eff mass plot 
         if show_fit is True:
             x = fp.x
             x_fit = dict()
@@ -120,14 +143,9 @@ class eff_plots():
                 x_fit[j] = x[j]
 
             x_plot = x_fit
-            print(x_plot)
-            print(x_plot.keys())
             for k in x_plot.keys():
-                print(k)
                 sp = k.split('_')[-1]
-                print(sp)
                 ax = self.ax_meff[k.split('_')[0]]
-                print(ax)
                 if 't0' in x_fit[k]:
                     t0 = x_fit[k]['t0']
                 else:
@@ -142,6 +160,7 @@ class eff_plots():
                     x_plot[k], fit.p, ax, t0=t0, color='k', alpha=.1)
                 if 'exp_r' in x_plot[k]['type']:
                     ax = self.ax_r[k.split('_')[0]]
+
                 if x_plot[k]['type'] in ['exp_r', 'exp_r_conspire']:
                     x_plot[k]['t_range'] = np.arange(
                         x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
@@ -204,91 +223,6 @@ class eff_plots():
 
 
 
-    def plot_eff_fit(self,states,fp,x_fit,fit,gv_data,priors,scale,save_figs=True):
-        self.ax_meff = make_eff_plots(states, fp, priors, gv_data)
-        print(self.ax_meff)
-        x = copy.deepcopy(fp.x)
-        x_plot = copy.deepcopy(x_fit)
-        for k in x_plot:
-            print(k)
-            sp = k.split('_')[-1]
-            ax = self.ax_meff[k.split('_')[0]]
-            if 't0' in x_fit[k]:
-                t0 = x_fit[k]['t0']
-            else:
-                t0 = 0
-            x_plot[k]['t_range'] = np.arange(
-                x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-            fit_funcs.corr_functions.eff_mass(
-                x_plot[k], fit.p, ax, t0=t0, color=x_plot[k]['color'])
-            x_plot[k]['t_range'] = np.arange(
-                x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-            fit_funcs.corr_functions.eff_mass(
-                x_plot[k], fit.p, ax, t0=t0, color='k', alpha=.1)
-            if 'exp_r' in x_plot[k]['type']:
-                ax = self.ax_r[k.split('_')[0]]
-                if x_plot[k]['type'] in ['exp_r', 'exp_r_conspire']:
-                    x_plot[k]['t_range'] = np.arange(
-                        x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-                    x_plot[x_plot[k]['denom'][0]+'_'
-                            + sp]['t_range'] = x_plot[k]['t_range']
-                    x_plot[x_plot[k]['denom'][1]+'_'
-                            + sp]['t_range'] = x_plot[k]['t_range']
-                    d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
-                            x_plot[x_plot[k]['denom'][1]+'_'+sp]]
-                    fit_funcs.corr_functions.eff_mass(
-                        x_plot[k], fit.p, ax, color=x_plot[k]['color'], denom_x=d_x)
-                    x_plot[k]['t_range'] = np.arange(
-                        x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-                    x_plot[x_plot[k]['denom'][0]+'_'
-                            + sp]['t_range'] = x_plot[k]['t_range']
-                    x_plot[x_plot[k]['denom'][1]+'_'
-                            + sp]['t_range'] = x_plot[k]['t_range']
-                    d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
-                            x_plot[x_plot[k]['denom'][1]+'_'+sp]]
-                    fit_funcs.corr_functions.eff_mass(
-                        x_plot[k], fit.p, ax, color='k', alpha=.1, denom_x=d_x)
-                else:
-                    x_plot[k]['t_range'] = np.arange(
-                        x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-                    fit_funcs.corr_functions.eff_mass(
-                        x_plot[k], fit.p, ax, color=x_plot[k]['color'])
-                    x_plot[k]['t_range'] = np.arange(
-                        x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-                    fit_funcs.corr_functions.eff_mass(
-                        x_plot[k], fit.p, ax, color='k', alpha=.1)
-
-            if scale:
-                for k in self.ax_meff:
-                    s, units = float(args.scale[0]), args.scale[1]
-                    axr = self.ax_meff[k].twinx()
-                    print(k, self.ax_meff[k].get_ylim())
-                    print(self.ax_meff[k].get_yticks())
-                    axr.set_ylim(self.ax_meff[k].get_ylim()[0]*s,
-                                    self.ax_meff[k].get_ylim()[1]*s)
-                    axr.set_yticks([s*t for t in self.ax_meff[k].get_yticks()[:-1]])
-                    if units in ['GeV', 'gev']:
-                        axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
-                    else:
-                        axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
-                    axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
-                                    (units), fontsize=20)
-
-            if save_figs:
-                for k in states:
-                    n_s = str(fp.corr_lst[k]['n_state'])
-                    plt.figure('m_'+k)
-                    plt.savefig('figures/'+k+'_meff_ns'
-                                + n_s+'.pdf', transparent=True)
-                    plt.figure('z_'+k)
-                    plt.savefig('figures/'+k+'_zeff_ns'
-                                + n_s+'.pdf', transparent=True)
-                    if 'exp_r' in fp.corr_lst[k]['type']:
-                        plt.figure('r_'+k)
-                        plt.savefig('figures/'+k+'_ratio_meff_ns'
-                                    + n_s+'.pdf', transparent=True)
-
-
     def effective_mass(gvdata, mtype='exp', tau=1):
         ''' Create effective mass data from gvar of the correlation function
             versus time.
@@ -296,6 +230,7 @@ class eff_plots():
             mtype  = type of effective mass: exp, cosh, cosh_costant, ...
             tau    = shift variable for making effective mass
         '''
+        meff = []
         if 'exp' in mtype:
             meff = 1./tau * np.log(gvdata / np.roll(gvdata, -tau))
         elif mtype == 'cosh':
@@ -386,7 +321,7 @@ class eff_plots():
     
     
     
-    def plot_mres(self,ax, dsets, key, mtype='exp', tau=1, colors=None, offset=0, denom_key=None):
+    def plot_mres(ax, dsets, key, mtype='exp', tau=1, colors=None, offset=0, denom_key=None):
         lst = [k for k in dsets if key in k]
         mres = lst[0].split('_')[0]
         data = dsets[mres+'_MP'] / dsets[mres+'_PP']

@@ -1,7 +1,7 @@
 import gvar as gv
 import numpy as np
 
-data_file = '/Users/grantdb/lqcd/c51_corr_analysis/tests/data/callat_a09m310_test.h5'
+data_file = './data/callat_a09m310_test.h5'
 
 fit_states = ['mres-L','mres-S', 'pion', 'kaon', 'proton', 'omega']
 #fit_states = ['pion', 'kaon', 'proton', 'omega']

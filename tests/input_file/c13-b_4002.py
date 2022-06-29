@@ -12,10 +12,10 @@ fit_states = ['proton', 'proton_SP',
 corr_lst = {
     # PION
     'proton':{
-        'dsets':['C13-b_4002.ama.h5/2pt/proton'],
+        'dsets':['/2pt/proton/src5.0_snk5.0/proton/C13.b_4002/AMA'],
         'weights'  :[1],
         't_reverse':[False],
-        'fold'     :True,
+        'fold'     :False,
         'snks'     :['S', 'P'],
         'srcs'     :['S'],
         'xlim'     :[0,48.5],

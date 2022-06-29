@@ -1,18 +1,20 @@
-#import tables as h5
+import tables as h5
+#import h5py as h5
 import numpy as np
 import gvar as gv
 import sys
-import h5py as h5
+
 
 '''
 TIME REVERSE
 '''
 
 
-def time_reverse(corr, reverse=True, phase=1, time_axis=1):
+def time_reverse(corr, reverse=False, phase=1, time_axis=1):
     ''' assumes time index is second of array
         assumes phase = +- 1
     '''
+    print(corr[:])
     if reverse:
         if len(corr.shape) > 1:
             cr = phase * np.roll(corr[:, ::-1], 1, axis=time_axis)
@@ -25,7 +27,8 @@ def time_reverse(corr, reverse=True, phase=1, time_axis=1):
     return cr
 
 
-def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=False, uncorr_all=False, verbose=True):
+def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=False, 
+            uncorr_all=False, verbose=True):
     corrs = gv.BufferDict()
 
     # check if f5_file is list
@@ -56,7 +59,6 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
     for corr in corr_dict:
         weights   = corr_dict[corr]['weights']
         t_reverse = corr_dict[corr]['t_reverse']
-        #d_sets = corr_dict[corr]['d_sets']
         # check if data is in an array or single correlators
         if 'corr_array' not in corr_dict[corr]:
             corr_array = True
@@ -64,19 +66,18 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
             corr_array = corr_dict[corr]['corr_array']
         if corr_array:
             # get first data
-            f5 = h5.File(f5_files[0], 'r')
-            #with h5.open_file(f5_files[0], 'r') as f5:
-            dsets = corr_dict[corr]['dsets']
-            data = np.zeros_like(f5.get_node('/'+dsets[0]).read())
-            for i_d, dset in enumerate(dsets):
-                if 'phase' in corr_dict[corr]:
-                    phase = corr_dict[corr]['phase'][i_d]
-                else:
-                    phase = 1
-                d_tmp = f5.get_node('/'+dset).read()
-                data += weights[i_d] * \
-                    time_reverse(
-                        d_tmp, reverse=t_reverse[i_d], phase=phase)
+            with h5.open_file(f5_files[0], 'r') as f5:
+                dsets = corr_dict[corr]['dsets']
+                data = np.zeros_like(f5.get_node('/'+dsets[0]).read())
+                for i_d, dset in enumerate(dsets):
+                    if 'phase' in corr_dict[corr]:
+                        phase = corr_dict[corr]['phase'][i_d]
+                    else:
+                        phase = 1
+                    d_tmp = f5.get_node('/'+dset).read()
+                    data += weights[i_d] * \
+                        time_reverse(
+                            d_tmp, reverse=t_reverse[i_d], phase=phase)
 
             # if we have more than 1 data file
             if len(f5_files) > 1:
@@ -223,3 +224,4 @@ def block_data(data, bl):
     corr_bl[nb-1] = data[(nb-1)*bl:].mean(axis=0)
 
     return corr_bl
+

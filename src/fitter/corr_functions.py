@@ -51,6 +51,28 @@ class CorrFunction:
                 r += A * np.exp(-E_n*t)
         return r
 
+    def exp_r(self,x,p):
+        r = self.exp(x, p) 
+        for k in x:
+            sp = k.split('_')[-1]
+            r[k] = self.corr_functions.two_h_ratio(x[k], p)
+            r[k] = r[k] / \
+                self.corr_functions.exp(x[x[k]['denom'][0]+'_'+sp], p)
+            r[k] = r[k] / \
+                self.corr_functions.exp(x[x[k]['denom'][1]+'_'+sp], p)
+        return r
+
+    def exp_r_conspire(self,x,p):
+        r = self.exp(x, p)
+        for k in x:
+            sp = k.split('_')[-1]
+            r[k] = self.corr_functions.two_h_conspire(x[k], p)
+            r[k] = r[k] / \
+                self.corr_functions.exp(x[x[k]['denom'][0]+'_'+sp], p)
+            r[k] = r[k] / \
+                self.corr_functions.exp(x[x[k]['denom'][1]+'_'+sp], p)
+        return r
+
     def exp_open(self, x, p):
         ''' first add exp tower '''
         r = self.exp(x,p)
@@ -195,6 +217,11 @@ class CorrFunction:
         xm = dict(x)
         xp['t_range'] = x['t_range']+tau
         xm['t_range'] = x['t_range']-tau
+        # for k in x:
+        #     if x[k]['type'] in dir(CorrFunction()):
+        #         corr[k]   =   getattr(CorrFunction(), x[k]['type'])(x[k],p)
+        #         corr_p[k] =   getattr(CorrFunction(), x[k]['type'])(xp[k],p)
+        #         corr_m[k] =   getattr(CorrFunction(), x[k]['type'])(xm[k],p)
         if x['type'] in ['cosh', 'cosh_const']:
             if x['type'] == 'cosh':
                 corr = self.cosh(x, p)
@@ -253,6 +280,25 @@ class FitCorr(object):
     def __init__(self):
         self.corr_functions = CorrFunction()
 
+    def get_fit(self,priors,states,x,y):
+        p0 = {k: v.mean for (k, v) in priors.items()}
+        # only pass x for states in fit
+        x_fit = dict()
+        y_fit = dict()
+        fit_lst = [k for k in x if k.split('_')[0] in states]
+        for k in fit_lst:
+            x_fit[k] = x[k]
+            if 'mres' not in k:
+                x_fit[k] = x[k]
+                y_fit[k] = y[k]
+            else:
+                k_res = k.split('_')[0]
+                if k_res not in x_fit:
+                    x_fit[k_res] = x[k]
+                    y_fit[k_res] = y[k_res]
+        return (p0,x_fit,y_fit)
+
+
     def priors(self, prior):
         '''
         only keep priors that are used in fit
@@ -268,26 +314,11 @@ class FitCorr(object):
                     p[q] = prior[q]
         return p
 
-    def fit_function(self, x, p):
+    def fit_function(self, x, p): 
         r = dict()
         for k in x:
             if x[k]['type'] in dir(self.corr_functions):
                 r[k] = getattr(self.corr_functions, x[k]['type'])(x[k],p)
-            # NOTE: we should move exp_r and exp_r_conspire into corr_functions
-            elif x[k]['type'] == 'exp_r':
-                sp = k.split('_')[-1]
-                r[k] = self.corr_functions.two_h_ratio(x[k], p)
-                r[k] = r[k] / \
-                    self.corr_functions.exp(x[x[k]['denom'][0]+'_'+sp], p)
-                r[k] = r[k] / \
-                    self.corr_functions.exp(x[x[k]['denom'][1]+'_'+sp], p)
-            elif x[k]['type'] == 'exp_r_conspire':
-                sp = k.split('_')[-1]
-                r[k] = self.corr_functions.two_h_conspire(x[k], p)
-                r[k] = r[k] / \
-                    self.corr_functions.exp(x[x[k]['denom'][0]+'_'+sp], p)
-                r[k] = r[k] / \
-                    self.corr_functions.exp(x[x[k]['denom'][1]+'_'+sp], p)
             else:
                 sys.exit('Unrecognized fit model, %s' %x[k]['type'])
         return r

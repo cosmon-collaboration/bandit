@@ -2,6 +2,9 @@ import fitter.plotting as plot
 import fitter.corr_functions as cf
 import fitter.load_data as ld
 import fitter.bootstrap as bs 
+import sys 
+#sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+#sys.path = [os.path.join(os.path.dirname(__file__), "..", "..")] + sys.path
 #import fitter.fit_analyzer as analyze
 import lsqfit
 import gvar as gv
@@ -117,41 +120,8 @@ def main():
     else:
         states = fp.fit_states
 
-    x = copy.deepcopy(fp.x)
-    y = {k: v[x[k]['t_range']]
-         for (k, v) in gv_data.items() if k.split('_')[0] in states}
-    for k in y:
-        if 'exp_r' in x[k]['type']:
-            sp = k.split('_')[-1]
-            y[k] = y[k] / gv_data[x[k]['denom'][0]+'_'+sp][x[k]['t_range']]
-            y[k] = y[k] / gv_data[x[k]['denom'][1]+'_'+sp][x[k]['t_range']]
-    if any(['mres' in k for k in y]):
-        mres_lst = [k.split('_')[0] for k in y if 'mres' in k]
-        mres_lst = list(set(mres_lst))
-        for k in mres_lst:
-            y[k] = y[k+'_MP'] / y[k+'_PP']
+    x,y,n_states,priors= plot.eff_plots.make_fit_params(fp=fp,states=states,gv_data=gv_data)
     
-    n_states = dict()
-    for state in states:
-        for k in x:
-            if state in k:
-                if state in k and 'mres' not in k:
-                    n_states[state] = x[k]['n_state']
-    priors = dict()
-    for k in fp.priors:
-        for state in states:
-            k_n = int(k.split('_')[-1].split(')')[0])
-            if state == k.split('(')[-1].split('_')[0] and k_n < n_states[state]:
-                priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
-            if 'mres' not in k:
-                k_n = int(k.split('_')[-1].split(')')[0])
-                if state == k.split('(')[-1].split('_')[0] and k_n < n_states[state]:
-                    priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
-            else:
-                mres = k.split('_')[0]
-                if mres in states:
-                    priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
-
     if args.eff:
         plt.ion()
         effective = plot.eff_plots()
@@ -177,21 +147,7 @@ def main():
 
     if args.fit:
         fit_funcs = cf.FitCorr()
-        p0 = {k: v.mean for (k, v) in priors.items()}
-        # only pass x for states in fit
-        x_fit = dict()
-        y_fit = dict()
-        fit_lst = [k for k in x if k.split('_')[0] in states]
-        for k in fit_lst:
-            x_fit[k] = x[k]
-            if 'mres' not in k:
-                x_fit[k] = x[k]
-                y_fit[k] = y[k]
-            else:
-                k_res = k.split('_')[0]
-                if k_res not in x_fit:
-                    x_fit[k_res] = x[k]
-                    y_fit[k_res] = y[k_res]
+        p0, x_fit, y_fit = fit_funcs.get_fit(priors=priors, states=states,x=x,y=y)
 
         if args.svd_test:
             data_chop = dict()
@@ -232,15 +188,18 @@ def main():
                                 scale=args.scale,show_fit=True,save_figs=args.save_figs)
 
         # run bootstrapping utility 
+        # NOTE: we should abstract this into boostrap.py 
         if args.bs:
-             if args.bs_write:
+            # make sure results dir exists
+            if args.bs_write:
                 if not os.path.exists('bs_results'):
                     os.makedirs('bs_results')
-             if len(args.bs_results.split('/')) == 1:
+            if len(args.bs_results.split('/')) == 1:
                 bs_file = 'bs_results/'+args.bs_results
-             else:
+            else:
                 bs_file = args.bs_results
-             if args.bs_write:
+            # check if we already wrote this dataset
+            if args.bs_write:
                 have_bs = False
                 if os.path.exists(bs_file):
                     #with h5.open_file(bs_file,'r') as f5:
@@ -250,23 +209,102 @@ def main():
                                 have_bs = True
                                 print(
                                     'you asked to write bs results to an existing dset and overwrite =', args.overwrite)
-             else:
+            else:
                 have_bs = False
-           # bs.run_bs(bs_results=args.bs_results, bs_path=args.bs_path, overwrite=args.overwrite,
-                      #Nbs=args.Nbs, fit=fit, bs_seed=args.bs_seed, fp=fp, verbose=args.verbose)
-        if args.bs_write:
-            # write the results
-            with h5py.File(bs_file, 'a') as f5:
-                try:
-                    f5.create_group(args.bs_path)
-                except Exception as e:
-                    print(e)
+            if not have_bs:
+                print('beginning Nbs=%d bootstrap fits' % args.Nbs)
+                import bootstrap as bs
+
+                # let us use the fit posterior to set the initial guess for bs loop
+                p0_bs = dict()
+                for k in fit.p:
+                    p0_bs[k] = fit.p[k].mean
+
+                if not args.bs_seed and 'bs_seed' not in dir(fp):
+                    tmp = input('you have not passed a BS seed nor is it defined in the input file\nenter a seed or hit return for none')
+                    if not tmp:
+                        bs_seed = None
+                    else:
+                        bs_seed = tmp
+                elif 'bs_seed' in dir(fp):
+                    bs_seed = fp.bs_seed
+                if args.bs_seed:
+                    if args.verbose:
+                        print('WARNING: you are overwriting the bs_seed from the input file')
+                    bs_seed = args.bs_seed
+
+                # make BS data
+                corr_bs = {}
+                for k in data_cfg:
+                    corr_bs[k] = bs.bs_corrs(data_cfg[k], Nbs=args.Nbs,
+                                                seed=bs_seed, return_mbs=True)
+                # make BS list for priors
+                p_bs_mean = dict()
+                for k in priors:
+                    p_bs_mean[k] = bs.bs_prior(args.Nbs, mean=priors[k].mean,
+                                            sdev=priors[k].sdev, seed=bs_seed+'_'+k)
+
+                # set up posterior lists of bs results
+                post_bs = dict()
+                for k in fit.p:
+                    post_bs[k] = []
+
+                for bs in range(args.Nbs):
+                    sys.stdout.write('%4d / %d\r' % (bs, args.Nbs))
+                    sys.stdout.flush()
+
+                    ''' all gvar's created in this switch are destroyed at restore_gvar [they are out of scope] '''
+                    gv.switch_gvar()
+
+                    bs_data = dict()
+                    for k in corr_bs:
+                        bs_data[k] = corr_bs[k][bs]
+                    bs_gv = gv.dataset.avg_data(bs_data)
+                    #import IPython; IPython.embed()
+                    if any(['mres' in k for k in bs_gv]):
+                        bs_tmp = {k:v for (k,v) in bs_gv.items() if 'mres' not in k}
+                        for k in [key for key in bs_gv if 'mres' in key]:
+                            mres = k.split('_')[0]
+                            if mres not in bs_tmp:
+                                bs_tmp[mres] = bs_gv[mres+'_MP'] / bs_gv[mres+'_PP']
+                        bs_gv = bs_tmp
+                    y_bs = {k: v[x_fit[k]['t_range']]
+                            for (k, v) in bs_gv.items() if k in states}
+                    p_bs = dict()
+                    for k in p_bs_mean:
+                        p_bs[k] = gv.gvar(p_bs_mean[k][bs], priors[k].sdev)
+                    # do the fit
+                    if has_svd:
+                        fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
+                                                      fcn=fit_funcs.fit_function, svdcut=svdcut)
+                    else:
+                        fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
+                                                      fcn=fit_funcs.fit_function)
+
+                    for r in post_bs:
+                        post_bs[r].append(fit_bs.p[r].mean)
+
+                    ''' end of gvar scope used for bootstrap '''
+                    gv.restore_gvar()
+
                 for r in post_bs:
-                    if len(post_bs[r]) > 0:
-                        if r in f5[args.bs_path]:
-                            del f5[args.bs_path+'/'+r]
-                        f5.create_dataset(
-                            args.bs_path+'/'+r, data=post_bs[r])
+                    post_bs[r] = np.array(post_bs[r])
+                if args.bs_write:
+                    # write the results
+                    with h5py.File(bs_file, 'a') as f5:
+                        try:
+                            f5.create_group(args.bs_path)
+                        except Exception as e:
+                            print(e)
+                        for r in post_bs:
+                            if len(post_bs[r]) > 0:
+                                if r in f5[args.bs_path]:
+                                    del f5[args.bs_path+'/'+r]
+                                f5.create_dataset(
+                                    args.bs_path+'/'+r, data=post_bs[r])
+
+                print('DONE')
+
         if args.svd_test:
             fig = plt.figure('svd_diagnosis', figsize=(7, 4))
             svd_test.plot_ratio(show=True)
