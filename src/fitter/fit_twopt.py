@@ -55,11 +55,13 @@ def main():
                         help=            'add verbosity [%(default)s]')
     parser.add_argument('--verbose_fit', default=False, action='store_true',
                         help=            'print y vs f(x,p) also? [%(default)s]')
+    parser.add_argument('--mres_avg',    default=False, action='store_true',
+                        help=            'plot mres_avg with mres fit? [%(default)s]')
     parser.add_argument('--save_figs',   default=False, action='store_true',
                         help=            'save figs? [%(default)s]')
     parser.add_argument('--bs',          default=False, action='store_true',
                         help=            'run bootstrap fit? [%(default)s]')
-    parser.add_argument('--Nbs',         type=int, default=2000,
+    parser.add_argument('--Nbs',         type=int, default=20,
                         help=            'specify the number of BS samples to compute [%(default)s]')
     parser.add_argument('--bs_seed',     default=None,
                         help=            'set a string to seed the bootstrap - None will be random [%(default)s]')
@@ -121,6 +123,7 @@ def main():
         states = fp.fit_states
 
     x,y,n_states,priors= plot.eff_plots.make_fit_params(fp=fp,states=states,gv_data=gv_data)
+    print(x,y,n_states,priors)
     
     if args.eff:
         plt.ion()
@@ -176,6 +179,10 @@ def main():
             print(fit.format(maxline=True))
         else:
             print(fit)
+
+        if args.mres_avg:
+            
+
 
         if args.gui:
             from lsqfitgui import run_server

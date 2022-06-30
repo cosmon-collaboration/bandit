@@ -336,6 +336,9 @@ class eff_plots():
             ax.errorbar(x, m, yerr=dm, linestyle='None', marker='o',
                         mfc='None', label=label)
 
+    def plot_avg_mres(ax, dsets, key, mtype='exp', tau=1, colors=None, offset=0, denom_key=None):
+        
+
     def make_stability_plot(states,x,fp,priors,gv_data,stability,scale,svd_test,data_cfg,n_states,svd_nbs,es_stability,
     save_figs):
         p = copy.deepcopy(fp.priors)

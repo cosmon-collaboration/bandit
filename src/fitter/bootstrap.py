@@ -1,14 +1,7 @@
+
 import numpy as np
 from numpy.random import Generator, SeedSequence, PCG64
 import hashlib
-import h5py
-import sys,os
-import gvar as gv
-import lsqfit
-
-#local modules
-import corr_functions as cf
-fit_funcs = cf.FitCorr()
 
 
 def get_rng(seed: str, verbose=False):
@@ -34,7 +27,6 @@ def bs_corrs(corr, Nbs, Mbs=None, seed=None, return_bs_list=False, return_mbs=Fa
                     if Mbs != Ncfg, you will have to appropriately rescale
                     the fluctuations by sqrt( Mbs / Ncfg)
             - seed: a string that will be hashed to seed the random number generator
-
         Return:
             return_mbs=False
                 corr_bs: an array of shape (Nbs, Nt, ...)
