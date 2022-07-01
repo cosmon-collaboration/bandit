@@ -460,7 +460,7 @@ def main():
                 have_bs = False
             if not have_bs:
                 print('beginning Nbs=%d bootstrap fits' % args.Nbs)
-                import bootstrap as bs
+                import bs_utils as bs
 
                 # let us use the fit posterior to set the initial guess for bs loop
                 p0_bs = dict()
