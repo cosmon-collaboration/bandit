@@ -141,6 +141,11 @@ priors = gv.BufferDict()
 x      = dict()
 
 priors['proton_E_0']  = gv.gvar(0.5, .06)
+# priors['proton_dE_0']  = gv.gvar(0.5, .06)
+# priors['proton_dE_1']  = gv.gvar(0.5, .06)
+# priors['proton_dE_2']  = gv.gvar(0.5, .06)
+# priors['proton_dE_3']  = gv.gvar(0.5, .06)
+#priors['proton_E_1']  = gv.gvar(0.7, .06)
 priors['proton_zS_0'] = gv.gvar(2.0e-5, 1.e-5)
 priors['proton_zP_0'] = gv.gvar(2.5e-3, 1.e-3)
 

@@ -2,10 +2,13 @@ import fitter.plotting as plot
 import fitter.corr_functions as cf
 import fitter.load_data as ld
 import fitter.bootstrap as bs 
+import os
+import sys
+
+import bs_utils.bs_utils as utils 
+test = utils.get_rng()
+print(test)
 import sys 
-#sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-#sys.path = [os.path.join(os.path.dirname(__file__), "..", "..")] + sys.path
-#import fitter.fit_analyzer as analyze
 import lsqfit
 import gvar as gv
 import importlib
@@ -20,8 +23,6 @@ import argparse
 import numpy as np
 np.seterr(invalid='ignore')
 #import tables as h5
-
-
 # user libs
 #sys.path.append('util')
 
@@ -30,7 +31,8 @@ def main():
     # do sys.argv routine here 
     parser = argparse.ArgumentParser(
         description='Perform analysis of two-point correlation function')
-    parser.add_argument('fit_params',    help='input file to specify fit')
+    parser.add_argument('fit_params',    help='input file to specify fit'),
+    #parser.add_argument('data_type',     help='Callat or LANL data file?'),
     parser.add_argument('--fit',         default=True, action='store_true',
                         help=            'do fit? [%(default)s]')
     parser.add_argument('--svdcut',      type=float, help='add svdcut to fit')
@@ -122,13 +124,14 @@ def main():
     else:
         states = fp.fit_states
 
-    x,y,n_states,priors= plot.eff_plots.make_fit_params(fp=fp,states=states,gv_data=gv_data)
-    print(x,y,n_states,priors)
+    x,y,n_states,priors= plot.make_fit_params(fp=fp,states=states,gv_data=gv_data)
+    print(priors)
     
     if args.eff:
-        plt.ion()
+        #plt.ion()
         effective = plot.eff_plots()
-        effective.make_eff_plots(states=states,fp=fp,x_fit=None,priors=priors,gv_data=gv_data,fit=None, scale=args.scale,show_fit=False,save_figs=args.save_figs)
+        effective.make_eff_plots(states=states,fp=fp,x_fit=None,priors=priors,
+        gv_data=gv_data,fit=None, scale=args.scale,show_fit=False,save_figs=args.save_figs)
         
     # set up svdcut if added
     if args.svdcut is not None:
@@ -141,11 +144,30 @@ def main():
         except:
             has_svd = False
 
+    print(states)
+    # make stability plot for given state 
     if args.stability:
-        plot.eff_plots.make_stability_plot(
-        states=states,x=x,fp=fp, priors=priors, gv_data=gv_data, stability=args.stability, 
+        plot.make_stability_plot(states=args.states,x=x,fp=fp,gv_data=gv_data, stability=args.stability,priors=priors, 
         scale = args.scale, svd_test=args.svd_test, data_cfg = data_cfg,n_states=n_states, 
         svd_nbs=args.svd_nbs, es_stability=args.es_stability,save_figs=args.save_figs)
+
+    # if any(['mres' in k for k in args.stability]):
+    #     # default: mres avg(tmin,tmax) user specified or nt/2
+    #     # user ask for mres fit 
+    #     # user ask mres stability result of avg and fit
+
+    #     mres_options:
+
+    # default: use m_res.avg from t_min to t_max (user specified, if not, t_min = 0, t_max = NT/2), plot avg on top of data
+    # user can ask for m_res.fit, then m_res should be in states that will be fit, and then fit.p['mres-L'] can be used to plot fit on data
+    # user asks for m_res stability, in which case we want to plot the result of the avg and the for a sweep over t_min with t_max specified by user or set to NT/2 if not
+    #     plot.plot_mres
+
+    # # plot excited state stability 
+    #if args.es_stability:
+
+        
+
 
 
     if args.fit:
@@ -170,8 +192,8 @@ def main():
                 if use_svd in ['y','Y','yes']:
                     svdcut = args.svdcut
         if has_svd:
-             fit = lsqfit.nonlinear_fit(data=(x_fit, y_fit), prior=priors, p0=p0, fcn=fit_funcs.fit_function,
-                                       svdcut=svdcut)
+                fit = lsqfit.nonlinear_fit(data=(x_fit, y_fit), prior=priors, p0=p0, fcn=fit_funcs.fit_function,
+                                        svdcut=svdcut)
         else:
             fit = lsqfit.nonlinear_fit(
                 data=(x_fit, y_fit), prior=priors, p0=p0, fcn=fit_funcs.fit_function)
@@ -180,7 +202,9 @@ def main():
         else:
             print(fit)
 
-        if args.mres_avg:
+        # if args.mres_avg:
+        #     plot.eff_plots.plot_mres(ax, dsets, key)
+
             
 
 

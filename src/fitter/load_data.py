@@ -10,11 +10,11 @@ TIME REVERSE
 '''
 
 
-def time_reverse(corr, reverse=False, phase=1, time_axis=1):
+def time_reverse(corr, reverse=True, phase=1, time_axis=1):
     ''' assumes time index is second of array
         assumes phase = +- 1
     '''
-    print(corr[:])
+    #print(corr[:])
     if reverse:
         if len(corr.shape) > 1:
             cr = phase * np.roll(corr[:, ::-1], 1, axis=time_axis)
