@@ -134,8 +134,10 @@ def main():
         except:
             has_svd = False
 
-    # if args.stability:
-    #     p = copy.deepcopy(fp.priors)
+    if args.stability:
+        plot.make_stability_plot(states=args.states,x=x,fp=fp,gv_data=gv_data, stability=args.stability,priors=priors, 
+        scale = args.scale, svd_test=args.svd_test, data_cfg = data_cfg,n_states=n_states, 
+        svd_nbs=args.svd_nbs, es_stability=args.es_stability,save_figs=args.save_figs)
 
     #     for state in args.stability:
     #         if 't_sweep' in fp.corr_lst[state]:

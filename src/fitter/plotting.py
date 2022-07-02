@@ -296,7 +296,93 @@ def plot_mres(ax, dsets, key, mtype='exp', tau=1, colors=None, offset=0, denom_k
                     mfc='None', label=label)
 
 
+def make_stability_plot(states,x,fp,gv_data,stability,priors,scale,
+                        svd_test,data_cfg,n_states,svd_nbs,es_stability,save_figs):
+    
+    #x,y,n_states,priors = make_fit_params(fp, states, gv_data)
+    p = copy.deepcopy(fp.priors)
+    for state in stability:
+        if 'mres' in state:
+            sys.exit("we don't support m_res stability with this function")
+        
+        print(state)
+        if 't_sweep' in fp.corr_lst[state]:
+                tmin = fp.corr_lst[state]['t_sweep']
+        else:
+            tmin = range(2, x[state]['t_range'][-1])
+        if 'n_sweep' in fp.corr_lst[state]:
+            n_states = fp.corr_lst[state]['n_sweep']
+        else:
+            n_states = range(1, 6)
+        tn_opt = (fp.corr_lst[state]['t_range'][0],
+                    fp.corr_lst[state]['n_state'])
+        x_tmp = dict()
+        for k in [kk for kk in x if kk.split('_')[0] == state]:
+            x_tmp[k] = x[k].copy()
 
+        fits = {}
+        for ti in tmin:
+            for k in x_tmp:
+                x_tmp[k]['t_range'] = np.arange(ti, x[k]['t_range'][-1]+1)
+
+            y_tmp = {k: v[x_tmp[k]['t_range']]
+                    for (k, v) in gv_data.items() if k in x_tmp}
+            if svd_test:
+                y_chop = dict()
+                for d in y_tmp:
+                    if d in x_tmp:
+                        y_chop[d] = data_cfg[d][:,x_tmp[d]['t_range']]
+                s = gv.dataset.svd_diagnosis(y_chop, nbstrap=svd_nbs)
+                svdcut = s.svdcut
+                has_svd = True
+            for k in x_tmp:
+                if k.split('_')[0] not in states:
+                    y_tmp.pop(k)
+            if ti == tmin[0]:
+                print([k for k in y_tmp])
+            for ns in n_states:
+                xx = copy.deepcopy(x_tmp)
+                for k in xx:
+                    ''' NOTE  - we are chaning n_s for pi, D and Dpi all together '''
+                    xx[k]['n_state'] = ns
+                #fit_funcs = cf.FitCorr()
+                p_sweep = {}
+
+                for k in p:
+                    if 'mres' not in k:
+                        if int(k.split('_')[-1].split(')')[0]) < ns:
+                            p_sweep[k] = gv.gvar(p[k].mean,p[k].sdev)
+
+                p0 = {k: v.mean for (k, v) in priors.items()}
+                #print('t_min = %d  ns = %d' %(ti,ns))
+                sys.stdout.write(
+                    'sweeping t_min = %d n_s = %d\r' % (ti, ns))
+                sys.stdout.flush()
+                
+                if has_svd:
+                    f_tmp = lsqfit.nonlinear_fit(data=(xx, y_tmp),
+                                                    prior=p_sweep, p0=p0,
+                                                    fcn=fit_funcs.fit_function, svdcut=svdcut)
+                else:
+                    f_tmp = lsqfit.nonlinear_fit(data=(xx, y_tmp),
+                                                    prior=p_sweep, p0=p0,
+                                                    fcn=fit_funcs.fit_function)
+                fits[(ti, ns)] = f_tmp
+                print(fits.keys())
+                
+
+                ylim = None
+                print(x_tmp[list(x_tmp.keys())[0]])
+                if 'eff_ylim' in x_tmp[list(x_tmp.keys())[0]]:
+                    ylim = x_tmp[k]['eff_ylim']
+            #y_lim = None
+        #mport IPython; IPython.embed()
+        plot_stability(fits=fits, tmin=tmin, n_states=n_states, tn_opt=tn_opt,
+                            state=state, ylim=ylim, save=save_figs)
+    if es_stability:
+        for i_n in range(1, n_states[-1]):
+            plot_stability(fits, tmin, n_states, tn_opt, state,
+                            ylim=ylim, save=save_figs, n_plot=i_n, scale=scale)
 
 def plot_stability(fits, tmin, n_states, tn_opt, state,
                    ylim=None, diff=False, save=True, n_plot=0, scale=None):
