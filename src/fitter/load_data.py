@@ -1,4 +1,4 @@
-import tables as h5
+#import tables as h5
 import numpy as np
 import gvar as gv
 import sys
@@ -90,6 +90,7 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
     for corr in corr_dict:
         weights   = corr_dict[corr]['weights']
         t_reverse = corr_dict[corr]['t_reverse']
+        #d_sets = corr_dict[corr]['d_sets']
         # check if data is in an array or single correlators
         if 'corr_array' not in corr_dict[corr]:
             corr_array = True

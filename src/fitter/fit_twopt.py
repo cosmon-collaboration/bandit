@@ -1,6 +1,8 @@
 import fitter.plotting as plot
 import fitter.corr_functions as cf
 import fitter.load_data as ld
+import fitter.bootstrap as bs 
+#import fitter.fit_analyzer as analyze
 import lsqfit
 import gvar as gv
 import importlib
@@ -22,10 +24,11 @@ np.seterr(invalid='ignore')
 
 
 def main():
+    # do sys.argv routine here 
     parser = argparse.ArgumentParser(
         description='Perform analysis of two-point correlation function')
     parser.add_argument('fit_params',    help='input file to specify fit')
-    parser.add_argument('--fit',         default=False, action='store_true',
+    parser.add_argument('--fit',         default=True, action='store_true',
                         help=            'do fit? [%(default)s]')
     parser.add_argument('--svdcut',      type=float, help='add svdcut to fit')
     parser.add_argument('--svd_test',    default=True, action='store_false',
@@ -35,7 +38,7 @@ def main():
                         help=            'fold data about T/2? [%(default)s]')
     parser.add_argument('-b', '--block', default=1, type=int,
                         help=            'specify bin/blocking size in terms of saved configs')
-    parser.add_argument('--eff',         default=False, action='store_true',
+    parser.add_argument('--eff',         default=True, action='store_true',
                         help=            'plot effective mass and z_eff data? [%(default)s]')
     parser.add_argument('--scale',       default=None, nargs=2,
                         help=            'add right axis with physical scale specified by input value [scale, units]')
