@@ -2,11 +2,45 @@
 import numpy as np
 import gvar as gv
 import sys
-import h5py as h5
+import copy
 
 '''
 TIME REVERSE
 '''
+
+def make_fit_params(fp,states,gv_data):
+    x = copy.deepcopy(fp.x)
+    y = {k: v[x[k]['t_range']]
+        for (k, v) in gv_data.items() if k.split('_')[0] in states}
+    for k in y:
+        if 'exp_r' in x[k]['type']:
+            sp = k.split('_')[-1]
+            y[k] = y[k] / gv_data[x[k]['denom'][0]+'_'+sp][x[k]['t_range']]
+            y[k] = y[k] / gv_data[x[k]['denom'][1]+'_'+sp][x[k]['t_range']]
+    if any(['mres' in k for k in y]):
+        mres_lst = [k.split('_')[0] for k in y if 'mres' in k]
+        mres_lst = list(set(mres_lst))
+        for k in mres_lst:
+            y[k] = y[k+'_MP'] / y[k+'_PP']
+    
+    n_states = dict()
+    for state in states:
+        for k in x:
+            if state in k:
+                if state in k and 'mres' not in k:
+                    n_states[state] = x[k]['n_state']
+    priors = dict()
+    for k in fp.priors:
+        for state in states:
+            if 'mres' not in k:
+                k_n = int(k.split('_')[-1].split(')')[0])
+                if state == k.split('(')[-1].split('_')[0] and k_n < n_states[state]:
+                    priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
+            else:
+                mres = k.split('_')[0]
+                if mres in states:
+                    priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
+    return(x,y,n_states,priors)
 
 
 def time_reverse(corr, reverse=True, phase=1, time_axis=1):
@@ -64,19 +98,18 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
             corr_array = corr_dict[corr]['corr_array']
         if corr_array:
             # get first data
-            f5 = h5.File(f5_files[0], 'r')
-            #with h5.open_file(f5_files[0], 'r') as f5:
-            dsets = corr_dict[corr]['dsets']
-            data = np.zeros_like(f5.get_node('/'+dsets[0]).read())
-            for i_d, dset in enumerate(dsets):
-                if 'phase' in corr_dict[corr]:
-                    phase = corr_dict[corr]['phase'][i_d]
-                else:
-                    phase = 1
-                d_tmp = f5.get_node('/'+dset).read()
-                data += weights[i_d] * \
-                    time_reverse(
-                        d_tmp, reverse=t_reverse[i_d], phase=phase)
+            with h5.open_file(f5_files[0], 'r') as f5:
+                dsets = corr_dict[corr]['dsets']
+                data = np.zeros_like(f5.get_node('/'+dsets[0]).read())
+                for i_d, dset in enumerate(dsets):
+                    if 'phase' in corr_dict[corr]:
+                        phase = corr_dict[corr]['phase'][i_d]
+                    else:
+                        phase = 1
+                    d_tmp = f5.get_node('/'+dset).read()
+                    data += weights[i_d] * \
+                        time_reverse(
+                            d_tmp, reverse=t_reverse[i_d], phase=phase)
 
             # if we have more than 1 data file
             if len(f5_files) > 1:

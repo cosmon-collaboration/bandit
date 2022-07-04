@@ -118,6 +118,13 @@ class CorrFunction:
         return p[x['state']]*np.ones_like(x['t_range'])
     
 
+    def mres(self, x, p):
+        ''' m_res = midpoint_pseudo / pseudo_pseudo
+            we fit to a constant away from early/late time
+            m_res = p[mres_l]
+        '''
+        return p[x['state']]*np.ones_like(x['t_range'])
+
     def two_h_ratio(self, x, p):
         ''' This model fits the g.s. as
 
