@@ -152,37 +152,35 @@ class eff_plots():
                         x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
                     fit_funcs.corr_functions.eff_mass(
                         x_plot[k], fit.p, ax, color='k', alpha=.1)
+            if scale:
+                for k in self.ax_meff:
+                    s, units = float(scale[0]), scale[1]
+                    axr = self.ax_meff[k].twinx()
+                    print(k, self.ax_meff[k].get_ylim())
+                    print(self.ax_meff[k].get_yticks())
+                    axr.set_ylim(self.ax_meff[k].get_ylim()[0]*s,
+                                self.ax_meff[k].get_ylim()[1]*s)
+                    axr.set_yticks([s*t for t in self.ax_meff[k].get_yticks()[:-1]])
+                    if units in ['GeV', 'gev']:
+                        axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
+                    else:
+                        axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
+                    axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
+                                (units), fontsize=20)
 
-        # for k in self.ax_meff:
-        #     s, units = float(scale[0]), scale[1]
-        #     axr = self.ax_meff[k].twinx()
-        #     print(k, self.ax_meff[k].get_ylim())
-        #     print(self.ax_meff[k].get_yticks())
-        #     axr.set_ylim(self.ax_meff[k].get_ylim()[0]*s,
-        #                  self.ax_meff[k].get_ylim()[1]*s)
-        #     axr.set_yticks([s*t for t in self.ax_meff[k].get_yticks()[:-1]])
-        #     if units in ['GeV', 'gev']:
-        #         axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
-        #     else:
-        #         axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
-        #     axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
-        #                    (units), fontsize=20)
-
-        if save_figs:
-            for k in states:
-                n_s = str(fp.corr_lst[k]['n_state'])
-                plt.figure('m_'+k)
-                plt.savefig('figures/'+k+'_meff_ns'
-                            + n_s+'.pdf', transparent=True)
-                plt.figure('z_'+k)
-                plt.savefig('figures/'+k+'_zeff_ns'
-                            + n_s+'.pdf', transparent=True)
-                if 'exp_r' in fp.corr_lst[k]['type']:
-                    plt.figure('r_'+k)
-                    plt.savefig('figures/'+k+'_ratio_meff_ns'
+            if save_figs:
+                for k in states:
+                    n_s = str(fp.corr_lst[k]['n_state'])
+                    plt.figure('m_'+k)
+                    plt.savefig('figures/'+k+'_meff_ns'
                                 + n_s+'.pdf', transparent=True)
-
-    #for k in states:
+                    plt.figure('z_'+k)
+                    plt.savefig('figures/'+k+'_zeff_ns'
+                                + n_s+'.pdf', transparent=True)
+                    if 'exp_r' in fp.corr_lst[k]['type']:
+                        plt.figure('r_'+k)
+                        plt.savefig('figures/'+k+'_ratio_meff_ns'
+                                    + n_s+'.pdf', transparent=True)
 
 
     def effective_mass(gvdata, mtype='exp', tau=1):
@@ -368,21 +366,21 @@ def make_stability_plot(states,x,fp,gv_data,stability,priors,scale,
                                                     prior=p_sweep, p0=p0,
                                                     fcn=fit_funcs.fit_function)
                 fits[(ti, ns)] = f_tmp
-                print(fits.keys())
+                #print(fits.keys())
                 
 
-                ylim = None
-                print(x_tmp[list(x_tmp.keys())[0]])
-                if 'eff_ylim' in x_tmp[list(x_tmp.keys())[0]]:
-                    ylim = x_tmp[k]['eff_ylim']
-            #y_lim = None
+        ylim = None
+        #print(x_tmp[list(x_tmp.keys())[0]])
+        if 'eff_ylim' in x_tmp[list(x_tmp.keys())[0]]:
+            ylim = x_tmp[k]['eff_ylim']
+        y_lim = None
         #mport IPython; IPython.embed()
         plot_stability(fits=fits, tmin=tmin, n_states=n_states, tn_opt=tn_opt,
                             state=state, ylim=ylim, save=save_figs)
-    if es_stability:
-        for i_n in range(1, n_states[-1]):
-            plot_stability(fits, tmin, n_states, tn_opt, state,
-                            ylim=ylim, save=save_figs, n_plot=i_n, scale=scale)
+        if es_stability:
+            for i_n in range(1, n_states[-1]):
+                plot_stability(fits, tmin, n_states, tn_opt, state,
+                                ylim=ylim, save=save_figs, n_plot=i_n, scale=scale)
 
 def plot_stability(fits, tmin, n_states, tn_opt, state,
                    ylim=None, diff=False, save=True, n_plot=0, scale=None):
