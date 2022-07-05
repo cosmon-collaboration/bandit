@@ -23,10 +23,11 @@ import tables as h5
 
 
 def main():
+    # do sys.argv routine here 
     parser = argparse.ArgumentParser(
         description='Perform analysis of two-point correlation function')
     parser.add_argument('fit_params',    help='input file to specify fit')
-    parser.add_argument('--fit',         default=False, action='store_true',
+    parser.add_argument('--fit',         default=True, action='store_true',
                         help=            'do fit? [%(default)s]')
     parser.add_argument('--svdcut',      type=float, help='add svdcut to fit')
     parser.add_argument('--svd_test',    default=True, action='store_false',
@@ -36,7 +37,7 @@ def main():
                         help=            'fold data about T/2? [%(default)s]')
     parser.add_argument('-b', '--block', default=1, type=int,
                         help=            'specify bin/blocking size in terms of saved configs')
-    parser.add_argument('--eff',         default=False, action='store_true',
+    parser.add_argument('--eff',         default=True, action='store_true',
                         help=            'plot effective mass and z_eff data? [%(default)s]')
     parser.add_argument('--mres',         default=False, action='store_true',
                         help=            'plot mres avg data with fit? [%(default)s]')
@@ -127,6 +128,8 @@ def main():
         gv_data=gv_data,fit=None, scale=args.scale,show_fit=False,save_figs=args.save_figs,x=x)
     # if args.mres:
     #     plot.plot_mres(ax, dsets, key, svdcut=args.svdcut, stability=args.stability)
+
+
 
 
     #set up svdcut if added
