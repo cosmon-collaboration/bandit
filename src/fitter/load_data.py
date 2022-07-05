@@ -40,7 +40,7 @@ def make_fit_params(fp,states,gv_data):
                 mres = k.split('_')[0]
                 if mres in states:
                     priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
-    return x,y,priors
+    return x,y,n_states,priors
 
 
 def time_reverse(corr, reverse=True, phase=1, time_axis=1):

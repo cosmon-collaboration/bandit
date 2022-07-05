@@ -119,7 +119,7 @@ def main():
         states = fp.fit_states
 
     # pulling in prepared x,y data, n_states from input file, and necessary priors to run fit 
-    x,y,priors= ld.make_fit_params(fp=fp,states=states,gv_data=gv_data)
+    x,y,n_states,priors= ld.make_fit_params(fp=fp,states=states,gv_data=gv_data)
     
     if args.eff:
         #plt.ion()
@@ -128,9 +128,6 @@ def main():
         gv_data=gv_data,fit=None, scale=args.scale,show_fit=False,save_figs=args.save_figs,x=x)
     # if args.mres:
     #     plot.plot_mres(ax, dsets, key, svdcut=args.svdcut, stability=args.stability)
-
-
-
 
     #set up svdcut if added
     if args.svdcut is not None:
