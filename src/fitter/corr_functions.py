@@ -110,6 +110,13 @@ class CorrFunction:
             r += z_snk * z_src * (np.exp(-E_n*t) + np.exp(-E_n*(T-t)))
         return r
 
+    def mres(self, x, p):
+        ''' m_res = midpoint_pseudo / pseudo_pseudo
+            we fit to a constant away from early/late time
+            m_res = p[mres_l]
+        '''
+        return p[x['state']]*np.ones_like(x['t_range'])
+
     def two_h_ratio(self, x, p):
         ''' This model fits the g.s. as
 
@@ -230,6 +237,9 @@ class CorrFunction:
                 corr = self.exp_gs(x, p)
                 corr_p = self.exp_gs(xp, p)
             meff = 1/tau * np.log(corr / corr_p)
+        elif x['type'] == 'mres':
+            corr = self.mres(x,p)
+            meff = corr
         else:
             sys.exit('unrecognized type, %s' % x['type'])
 
@@ -260,18 +270,9 @@ class FitCorr(object):
     def fit_function(self, x, p):
         r = dict()
         for k in x:
-            if x[k]['type'] == 'exp':
-                r[k] = self.corr_functions.exp(x[k], p)
-            elif x[k]['type'] == 'cosh':
-                r[k] = self.corr_functions.cosh(x[k], p)
-            elif x[k]['type'] == 'cosh_const':
-                r[k] = self.corr_functions.cosh_const(x[k], p)
-            elif x[k]['type'] == 'exp_open':
-                r[k] = self.corr_functions.exp_open(x[k], p)
-            elif x[k]['type'] == 'exp_gs':
-                r[k] = self.corr_functions.exp_gs(x[k], p)
-            elif x[k]['type'] == 'exp_r_ind':
-                r[k] = self.corr_functions.exp(x[k], p)
+            if x[k]['type'] in dir(self.corr_functions):
+                r[k] = getattr(self.corr_functions, x[k]['type'])(x[k],p)
+            # NOTE: we should move exp_r and exp_r_conspire into corr_functions
             elif x[k]['type'] == 'exp_r':
                 sp = k.split('_')[-1]
                 r[k] = self.corr_functions.two_h_ratio(x[k], p)
@@ -286,4 +287,6 @@ class FitCorr(object):
                     self.corr_functions.exp(x[x[k]['denom'][0]+'_'+sp], p)
                 r[k] = r[k] / \
                     self.corr_functions.exp(x[x[k]['denom'][1]+'_'+sp], p)
+            else:
+                sys.exit('Unrecognized fit model, %s' %x[k]['type'])
         return r

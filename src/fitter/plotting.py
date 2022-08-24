@@ -50,6 +50,21 @@ def plot_eff(ax, dsets, key, mtype='exp', tau=1, colors=None, offset=0, denom_ke
             ax.errorbar(x, m, yerr=dm, linestyle='None', marker='o',
                         mfc='None', label=label)
 
+def plot_mres(ax, dsets, key, mtype='exp', tau=1, colors=None, offset=0, denom_key=None):
+    lst = [k for k in dsets if key in k]
+    mres = lst[0].split('_')[0]
+    data = dsets[mres+'_MP'] / dsets[mres+'_PP']
+    lbl  = mres
+    x  = np.arange(data.shape[0]) + offset
+    m  = [k.mean for k in data]
+    dm = [k.sdev for k in data]
+    if colors is not None:
+        ax.errorbar(x, m, yerr=dm, linestyle='None', marker='o',
+                    color=colors, mfc='None', label=lbl)
+    else:
+        ax.errorbar(x, m, yerr=dm, linestyle='None', marker='o',
+                    mfc='None', label=label)
+
 
 def plot_zeff(ax, dsets, key, ztype='A_snk,src', snksrc=None, mtype='exp', tau=1, colors=None):
     lst = [k for k in dsets if key in k]
