@@ -221,3 +221,13 @@ def block_data(data, bl):
     corr_bl[nb-1] = data[(nb-1)*bl:].mean(axis=0)
 
     return corr_bl
+
+def svd_processor(data):
+    d = gv.dataset.avg_data(data)
+    if any(['mres' in k for k in d]):
+        d2 = gv.BufferDict({k:v for k,v in d.items() if 'mres' not in k})
+        mres = list(set([k.split('_')[0] for k in d if 'mres' in k]))
+        for k in mres:
+            d2[k] = d[k+'_MP'] / d[k+'_PP']
+        d = d2
+    return d

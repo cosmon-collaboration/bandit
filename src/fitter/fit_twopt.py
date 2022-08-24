@@ -265,7 +265,7 @@ def main():
                     for d in y_tmp:
                         if d in x_tmp:
                             y_chop[d] = data_cfg[d][:,x_tmp[d]['t_range']]
-                    s = gv.dataset.svd_diagnosis(y_chop, nbstrap=args.svd_nbs)
+                    s = gv.dataset.svd_diagnosis(y_chop, nbstrap=args.svd_nbs, process_dataset=ld.svd_processor)
                     svdcut = s.svdcut
                     has_svd = True
                 for k in x_tmp:
@@ -334,7 +334,8 @@ def main():
                     data_chop[d] = data_cfg[d][:,x_fit[d]['t_range']]
                 if 'mres' in d and len(d.split('_')) > 1:
                     data_chop[d] = data_cfg[d][:,x_fit[d.split('_')[0]]['t_range']]
-            svd_test = gv.dataset.svd_diagnosis(data_chop, nbstrap=args.svd_nbs)
+
+            svd_test = gv.dataset.svd_diagnosis(data_chop, nbstrap=args.svd_nbs, process_dataset=ld.svd_processor)
             svdcut = svd_test.svdcut
             has_svd = True
             if args.svdcut is not None:
@@ -552,7 +553,7 @@ def main():
 
                 print('DONE')
 
-        if args.svd_test:
+        if args.svd_test and args.eff:
             fig = plt.figure('svd_diagnosis', figsize=(7, 4))
             svd_test.plot_ratio(show=True)
     if args.interact:
