@@ -1,19 +1,157 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import copy
+# our libs
+import fitter.corr_functions as cf
 
 
-def make_eff_plots(states, ):
-    ''' Make dictionary of effective mass, and effective overlap factor plots
-        states: list of states to make effective plots for
+figsize=(6.5, 6.5/1.618034333)
 
-    '''
-    # dictionaries to hold effective axes
-    ax_meff = {}
-    ax_zeff = {}
+class EffectivePlots():
 
-    #for k in states:
+    def __init__(self):
+        self.ax = {}
 
+    def make_eff_plots(self,
+        states,          # what states to make plot for
+        params,          # user specified plotting parameters
+        priors,          # user specified priors
+        gv_data,         # dictionary containing data in gvar format
+        scale=[] # show plots live?
+        ):
+        ''' Make dictionary of effective mass, and effective overlap factor plots
+
+            states: list of states to make effective plots for
+            params:
+            priors:
+            gv_data:
+            scale:
+        '''
+        for k in states:
+            # make this optional
+            clrs = params.corr_lst[k]['colors']
+
+            # does the data start from t=0?
+            if 't0' in params.corr_lst[k]:
+                t0 = params.corr_lst[k]['t0']
+            else:
+                t0 = 0
+
+            # create effective mass plot
+            fig = plt.figure('m_'+k, figsize=figsize)
+            # save space on right if we add physical scale
+            if scale:
+                self.ax['m_'+k] = plt.axes([0.15, 0.15, 0.74, 0.84])
+            else:
+                self.ax['m_'+k] = plt.axes([0.15, 0.15, 0.84, 0.84])
+
+            # plot prior on eff plot
+            if params.corr_lst[k]['type'] == 'mres':
+                p = priors[k]
+            elif params.corr_lst[k]['type'] in ['exp_r', 'exp_r_conspire']:
+                d1, d2 = params.corr_lst[k]['denom']
+                p = priors[d1+'_E_0'] + priors[d2+'_E_0'] + priors[k+'_dE_0_0']
+            else:
+                p = priors[k+'_E_0']
+            self.ax['m_'+k].axhspan(p.mean -p.sdev, p.mean +p.sdev, color='k', alpha=.2)
+
+            # plot data
+            if 'mres' not in k:
+                plot_eff(self.ax['m_'+k], gv_data, k, mtype=params.corr_lst[k]['type'],
+                        colors=clrs, offset=t0)
+            else:
+                plot_mres(self.ax['m_'+k], gv_data, k, mtype=params.corr_lst[k]['type'],
+                        colors=clrs, offset=t0)
+            # set ranges and labels
+            self.ax['m_'+k].set_xlim(params.corr_lst[k]['xlim'])
+            self.ax['m_'+k].set_ylim(params.corr_lst[k]['ylim'])
+            self.ax['m_'+k].set_xlabel(r'$t/a$', fontsize=20)
+            self.ax['m_'+k].set_ylabel(r'$m_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
+            self.ax['m_'+k].legend(fontsize=20)
+
+            # make effective z plots
+            if 'mres' not in k:
+                fig = plt.figure('z_'+k, figsize=figsize)
+                ''' NOTE: this has to change to split different z-factors
+                '''
+                self.ax['z_'+k] = plt.axes([0.15, 0.15, 0.84, 0.84])
+
+                snksrc = {'snks': params.corr_lst[k]['snks'],
+                          'srcs': params.corr_lst[k]['srcs']}
+                mtype = params.corr_lst[k]['type']
+                ztype = params.corr_lst[k]['ztype']
+                plot_zeff(self.ax['z_'+k], gv_data, k, ztype=ztype, mtype=mtype,
+                        snksrc=snksrc, colors=clrs)
+                self.ax['z_'+k].set_xlim(params.corr_lst[k]['xlim'])
+                self.ax['z_'+k].set_ylim(params.corr_lst[k]['z_ylim'])
+                self.ax['z_'+k].set_xlabel(r'$t/a$', fontsize=20)
+                self.ax['z_'+k].set_ylabel(r'$z_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
+                self.ax['z_'+k].legend(fontsize=20, loc=1)
+
+    def plot_eff_fit(self,
+        x_fit,
+        fit, ):
+        '''
+            x_fit: parameters for fit
+            fit  : result of lsqfit.nonlinear_fit
+        '''
+        fit_funcs = cf.FitCorr()
+
+        x_plot = copy.deepcopy(x_fit)
+        for k_sp in x_plot:
+            k,sp = k_sp.split('_')
+            ax = self.ax['m_'+k]
+
+            if 't0' in x_fit[k_sp]:
+                t0 = x_fit[k_sp]['t0']
+            else:
+                t0 = 0
+
+            # plot in fit region
+            xi = x_fit[k_sp]['t_range'][0]
+            xf = x_fit[k_sp]['t_range'][-1]
+            x_plot[k_sp]['t_range'] = np.arange(xi, xf+.1, .1)
+            fit_funcs.corr_functions.eff_mass(
+                x_plot[k_sp], fit.p, ax, t0=t0, color=x_plot[k_sp]['color'])
+            # extrapolate to large t
+            x_plot[k_sp]['t_range'] = np.arange(xf+.5, xf+50.1, .1)
+            fit_funcs.corr_functions.eff_mass(
+                x_plot[k_sp], fit.p, ax, t0=t0, color='k', alpha=.2)
+
+            if 'exp_r' in x_plot[k_sp]['type']:
+                sys.exit('please enable eff plotting support for ratio fits')
+                """
+                ax = ax_r[k.split('_')[0]]
+                if x_plot[k]['type'] in ['exp_r', 'exp_r_conspire']:
+                    x_plot[k]['t_range'] = np.arange(
+                        x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
+                    x_plot[x_plot[k]['denom'][0]+'_'+ sp]['t_range'] = x_plot[k]['t_range']
+                    x_plot[x_plot[k]['denom'][1]+'_'+ sp]['t_range'] = x_plot[k]['t_range']
+                    d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
+                           x_plot[x_plot[k]['denom'][1]+'_'+sp]]
+                    fit_funcs.corr_functions.eff_mass(
+                        x_plot[k], fit.p, ax, color=x_plot[k]['color'], denom_x=d_x)
+                    x_plot[k]['t_range'] = np.arange(
+                        x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
+                    x_plot[x_plot[k]['denom'][0]+'_'
+                           + sp]['t_range'] = x_plot[k]['t_range']
+                    x_plot[x_plot[k]['denom'][1]+'_'
+                           + sp]['t_range'] = x_plot[k]['t_range']
+                    d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
+                           x_plot[x_plot[k]['denom'][1]+'_'+sp]]
+                    fit_funcs.corr_functions.eff_mass(
+                        x_plot[k], fit.p, ax, color='k', alpha=.1, denom_x=d_x)
+                else:
+                    x_plot[k]['t_range'] = np.arange(
+                        x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
+                    fit_funcs.corr_functions.eff_mass(
+                        x_plot[k], fit.p, ax, color=x_plot[k]['color'])
+                    x_plot[k]['t_range'] = np.arange(
+                        x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
+                    fit_funcs.corr_functions.eff_mass(
+                        x_plot[k], fit.p, ax, color='k', alpha=.1)
+                """
 
 def effective_mass(gvdata, mtype='exp', tau=1):
     ''' Create effective mass data from gvar of the correlation function

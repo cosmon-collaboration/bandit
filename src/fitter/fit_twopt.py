@@ -145,84 +145,10 @@ def main():
                     priors[k] = gv.gvar(fp.priors[k].mean, fp.priors[k].sdev)
 
     if args.eff:
+        eff_plots = plot.EffectivePlots()
         plt.ion()
-        ax_meff = {}
-        ax_zeff = {}
-        ax_r = {}
-        for k in states:
-            clrs = fp.corr_lst[k]['colors']
-            if 't0' in fp.corr_lst[k]:
-                t0 = fp.corr_lst[k]['t0']
-            else:
-                t0 = 0
-            # m_eff
-            fig = plt.figure('m_'+k, figsize=(7, 4))
-            if args.scale:
-                ax_meff[k] = plt.axes([0.15, 0.15, 0.74, 0.84])
-            else:
-                ax_meff[k] = plt.axes([0.15, 0.15, 0.84, 0.84])
-            if fp.corr_lst[k]['type'] not in ['exp_r', 'exp_r_conspire']:
-                if fp.corr_lst[k]['type'] == 'mres':
-                    p = priors[k]
-                else:
-                    p = priors[k+'_E_0']
-            else:
-                d1, d2 = fp.corr_lst[k]['denom']
-                p = priors[d1+'_E_0'] + priors[d2+'_E_0'] + priors[k+'_dE_0_0']
-            ax_meff[k].axhspan(p.mean-p.sdev, p.mean
-                               + p.sdev, color='k', alpha=.2)
-            if 'mres' not in k:
-                plot.plot_eff(ax_meff[k], gv_data, k,
-                              mtype=fp.corr_lst[k]['type'], colors=clrs, offset=t0)
-            else:
-                plot.plot_mres(ax_meff[k], gv_data, k,
-                              mtype=fp.corr_lst[k]['type'], colors=clrs, offset=t0)
-            ax_meff[k].set_xlim(fp.corr_lst[k]['xlim'])
-            ax_meff[k].set_ylim(fp.corr_lst[k]['ylim'])
-            ax_meff[k].set_xlabel(r'$t/a$', fontsize=20)
-            ax_meff[k].set_ylabel(
-                r'$m_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
-            ax_meff[k].legend(fontsize=20)
 
-            if 'mres' not in k:
-                if 'denom' in fp.corr_lst[k]:
-                    fig = plt.figure('r_'+k, figsize=(7, 4))
-                    ax_r[k] = plt.axes([0.15, 0.15, 0.84, 0.84])
-                    if fp.corr_lst[k]['type'] == 'exp_r_ind':
-                        p = priors[k+'_E_0']
-                    else:
-                        p = priors[k+'_dE_0_0']
-                    ax_r[k].axhspan(p.mean-p.sdev, p.mean
-                                    + p.sdev, color='k', alpha=.2)
-                    plot.plot_eff(ax_r[k], gv_data, k, mtype=fp.corr_lst[k]['type'],
-                                  colors=clrs, denom_key=fp.corr_lst[k]['denom'])
-                    ax_r[k].set_xlim(fp.corr_lst[k]['xlim'])
-                    #ax_r[k].set_ylim(fp.corr_lst[k]['ylim'])
-                    ax_r[k].set_ylim(-.02, .02)
-                    ax_r[k].set_xlabel(r'$t/a$', fontsize=20)
-                    ax_r[k].set_ylabel(
-                        r'$m_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
-                    ax_r[k].legend(fontsize=20)
-
-                # z_eff
-                fig = plt.figure('z_'+k, figsize=(7, 4))
-                ax_zeff[k] = plt.axes([0.15, 0.15, 0.84, 0.82])
-                snksrc = {'snks': fp.corr_lst[k]['snks'],
-                          'srcs': fp.corr_lst[k]['srcs']}
-                mtype = fp.corr_lst[k]['type']
-                ztype = fp.corr_lst[k]['ztype']
-                # this zeff prior is not generic yet
-                #for z in fp.corr_lst[k]['snks']:
-                #    p = priors[k+'_z'+z+'_0']
-                #    ax_zeff[k].axhspan(p.mean-p.sdev, p.mean+p.sdev, color='k',alpha=.2)
-                plot.plot_zeff(ax_zeff[k], gv_data, k, ztype=ztype,
-                               mtype=mtype, snksrc=snksrc, colors=clrs)
-                ax_zeff[k].set_xlim(fp.corr_lst[k]['xlim'])
-                ax_zeff[k].set_ylim(fp.corr_lst[k]['z_ylim'])
-                ax_zeff[k].set_xlabel(r'$t/a$', fontsize=20)
-                ax_zeff[k].set_ylabel(
-                    r'$z_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
-                ax_zeff[k].legend(fontsize=20, loc=1)
+        eff_plots.make_eff_plots(states, fp, priors, gv_data, scale=args.scale)
 
     # set up svdcut if added
     if args.svdcut is not None:
@@ -360,52 +286,7 @@ def main():
             run_server(fit, name="c51 Two-Point Fitter")
 
         if args.eff:
-            x_plot = copy.deepcopy(x_fit)
-            for k in x_plot:
-                sp = k.split('_')[-1]
-                ax = ax_meff[k.split('_')[0]]
-                if 't0' in x_fit[k]:
-                    t0 = x_fit[k]['t0']
-                else:
-                    t0 = 0
-                x_plot[k]['t_range'] = np.arange(
-                    x_fit[k]['t_range'][0], x_fit[k]['t_range'][-1]+.1, .1)
-                fit_funcs.corr_functions.eff_mass(
-                    x_plot[k], fit.p, ax, t0=t0, color=x_plot[k]['color'])
-                x_plot[k]['t_range'] = np.arange(
-                    x_fit[k]['t_range'][-1]+.5, x_fit[k]['t_range'][-1]+20.1, .1)
-                fit_funcs.corr_functions.eff_mass(
-                    x_plot[k], fit.p, ax, t0=t0, color='k', alpha=.1)
-                if 'exp_r' in x_plot[k]['type']:
-                    ax = ax_r[k.split('_')[0]]
-                    if x_plot[k]['type'] in ['exp_r', 'exp_r_conspire']:
-                        x_plot[k]['t_range'] = np.arange(
-                            x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-                        x_plot[x_plot[k]['denom'][0]+'_'+ sp]['t_range'] = x_plot[k]['t_range']
-                        x_plot[x_plot[k]['denom'][1]+'_'+ sp]['t_range'] = x_plot[k]['t_range']
-                        d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
-                               x_plot[x_plot[k]['denom'][1]+'_'+sp]]
-                        fit_funcs.corr_functions.eff_mass(
-                            x_plot[k], fit.p, ax, color=x_plot[k]['color'], denom_x=d_x)
-                        x_plot[k]['t_range'] = np.arange(
-                            x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-                        x_plot[x_plot[k]['denom'][0]+'_'
-                               + sp]['t_range'] = x_plot[k]['t_range']
-                        x_plot[x_plot[k]['denom'][1]+'_'
-                               + sp]['t_range'] = x_plot[k]['t_range']
-                        d_x = [x_plot[x_plot[k]['denom'][0]+'_'+sp],
-                               x_plot[x_plot[k]['denom'][1]+'_'+sp]]
-                        fit_funcs.corr_functions.eff_mass(
-                            x_plot[k], fit.p, ax, color='k', alpha=.1, denom_x=d_x)
-                    else:
-                        x_plot[k]['t_range'] = np.arange(
-                            x[k]['t_range'][0], x[k]['t_range'][-1]+.1, .1)
-                        fit_funcs.corr_functions.eff_mass(
-                            x_plot[k], fit.p, ax, color=x_plot[k]['color'])
-                        x_plot[k]['t_range'] = np.arange(
-                            x[k]['t_range'][-1]+.5, x[k]['t_range'][-1]+20.1, .1)
-                        fit_funcs.corr_functions.eff_mass(
-                            x_plot[k], fit.p, ax, color='k', alpha=.1)
+            eff_plots.plot_eff_fit(x_fit, fit)
 
         if args.eff and args.scale:
             for k in ax_meff:
