@@ -254,22 +254,10 @@ def main():
                     y_fit[k_res] = y[k_res]
 
         if args.svd_test:
-            data_chop = dict()
-            for d in y:
-                if d in x_fit and 'mres' not in d:
-                    data_chop[d] = data_cfg[d][:,x_fit[d]['t_range']]
-                if 'mres' in d and len(d.split('_')) > 1:
-                    data_chop[d] = data_cfg[d][:,x_fit[d.split('_')[0]]['t_range']]
-
-            svd_test = gv.dataset.svd_diagnosis(data_chop, nbstrap=args.svd_nbs, process_dataset=ld.svd_processor)
-            svdcut = svd_test.svdcut
             has_svd = True
-            if args.svdcut is not None:
-                print('    s.svdcut = %.2e' %svd_test.svdcut)
-                print(' args.svdcut = %.2e' %args.svdcut)
-                use_svd = input('   use specified svdcut instead of that from svd_diagnosis? [y/n]\n')
-                if use_svd in ['y','Y','yes']:
-                    svdcut = args.svdcut
+            svd_test, svdcut = ld.svd_diagnose(y, data_cfg, x_fit, args.svd_nbs,
+                                               svdcut=args.svdcut)
+
         if has_svd:
             fit = lsqfit.nonlinear_fit(data=(x_fit, y_fit), prior=priors, p0=p0, fcn=fit_funcs.fit_function,
                                        svdcut=svdcut)

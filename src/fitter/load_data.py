@@ -231,3 +231,23 @@ def svd_processor(data):
             d2[k] = d[k+'_MP'] / d[k+'_PP']
         d = d2
     return d
+
+def svd_diagnose(data, data_cfg, x_params, nbs, svdcut=None):
+    data_chop = dict()
+    for d in data:
+        if d in x_params and 'mres' not in d:
+            data_chop[d] = data_cfg[d][:,x_params[d]['t_range']]
+        if 'mres' in d and len(d.split('_')) > 1:
+            data_chop[d] = data_cfg[d][:,x_params[d.split('_')[0]]['t_range']]
+
+    svd_test = gv.dataset.svd_diagnosis(data_chop, nbstrap=nbs,
+                                        process_dataset=svd_processor)
+    svd_cut = svd_test.svdcut
+    if svdcut is not None:
+        print('  svd_diagnose.svdcut = %.2e' %svd_test.svdcut)
+        print('          args.svdcut = %.2e' %svdcut)
+        use_svd = input('   use specified svdcut instead of that from svd_diagnosis? [y/n]\n')
+        if use_svd in ['y','Y','yes']:
+            svd_cut = svdcut
+
+    return svd_test, svd_cut
