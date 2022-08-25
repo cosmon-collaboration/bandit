@@ -70,6 +70,19 @@ class EffectivePlots():
             self.ax['m_'+k].set_ylabel(r'$m_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
             self.ax['m_'+k].legend(fontsize=20)
 
+            if scale:
+                s, units = float(scale[0]), scale[1]
+                axr = self.ax['m_'+k].twinx()
+                axr.set_ylim(self.ax['m_'+k].get_ylim()[0]*s,
+                             self.ax['m_'+k].get_ylim()[1]*s)
+                axr.set_yticks([s*t for t in self.ax['m_'+k].get_yticks()[:-1]])
+                if units in ['GeV', 'gev']:
+                    axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
+                else:
+                    axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
+                axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
+                               (units), fontsize=20)
+
             # make effective z plots
             if 'mres' not in k:
                 fig = plt.figure('z_'+k, figsize=figsize)

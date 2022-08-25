@@ -288,22 +288,6 @@ def main():
         if args.eff:
             eff_plots.plot_eff_fit(x_fit, fit)
 
-        if args.eff and args.scale:
-            for k in ax_meff:
-                s, units = float(args.scale[0]), args.scale[1]
-                axr = ax_meff[k].twinx()
-                print(k, ax_meff[k].get_ylim())
-                print(ax_meff[k].get_yticks())
-                axr.set_ylim(ax_meff[k].get_ylim()[0]*s,
-                             ax_meff[k].get_ylim()[1]*s)
-                axr.set_yticks([s*t for t in ax_meff[k].get_yticks()[:-1]])
-                if units in ['GeV', 'gev']:
-                    axr.set_yticklabels(["%.2f" % t for t in axr.get_yticks()])
-                else:
-                    axr.set_yticklabels(["%.0f" % t for t in axr.get_yticks()])
-                axr.set_ylabel(r'$m_{\rm eff}(t) / {\rm %s}$' %
-                               (units), fontsize=20)
-
         if args.save_figs:
             for k in states:
                 n_s = str(fp.corr_lst[k]['n_state'])
