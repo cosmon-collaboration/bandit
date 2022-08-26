@@ -1,6 +1,3 @@
-import fitter.plotting as plot
-import fitter.corr_functions as cf
-import fitter.load_data as ld
 import lsqfit
 import gvar as gv
 import importlib
@@ -18,8 +15,10 @@ np.seterr(invalid='ignore')
 
 
 # user libs
-#sys.path.append('util')
-
+import fitter.plotting as plot
+import fitter.corr_functions as cf
+import fitter.load_data as ld
+import fitter.analysis as analysis
 
 def main():
     parser = argparse.ArgumentParser(
@@ -134,102 +133,22 @@ def main():
             has_svd = False
 
     if args.stability:
-        p = copy.deepcopy(fp.priors)
-
-        for state in args.stability:
-            if 't_sweep' in fp.corr_lst[state]:
-                tmin = fp.corr_lst[state]['t_sweep']
-            else:
-                tmin = range(2, x[state]['t_range'][-1])
-            if 'n_sweep' in fp.corr_lst[state]:
-                n_states = fp.corr_lst[state]['n_sweep']
-            else:
-                n_states = range(1, 6)
-            tn_opt = (fp.corr_lst[state]['t_range'][0],
-                      fp.corr_lst[state]['n_state'])
-            x_tmp = dict()
-            for k in [kk for kk in x if kk.split('_')[0] == state]:
-                x_tmp[k] = x[k].copy()
-
-            fits = {}
-            for ti in tmin:
-                for k in x_tmp:
-                    x_tmp[k]['t_range'] = np.arange(ti, x[k]['t_range'][-1]+1)
-
-                y_tmp = {k: v[x_tmp[k]['t_range']]
-                         for (k, v) in gv_data.items() if k in x_tmp}
-                if args.svd_test:
-                    y_chop = dict()
-                    for d in y_tmp:
-                        if d in x_tmp:
-                            y_chop[d] = data_cfg[d][:,x_tmp[d]['t_range']]
-                    s = gv.dataset.svd_diagnosis(y_chop, nbstrap=args.svd_nbs, process_dataset=ld.svd_processor)
-                    svdcut = s.svdcut
-                    has_svd = True
-                for k in x_tmp:
-                    if k.split('_')[0] not in states:
-                        y_tmp.pop(k)
-                if ti == tmin[0]:
-                    print([k for k in y_tmp])
-                for ns in n_states:
-                    xx = copy.deepcopy(x_tmp)
-                    for k in xx:
-                        ''' NOTE  - we are chaning n_s for pi, D and Dpi all together '''
-                        xx[k]['n_state'] = ns
-                    fit_funcs = cf.FitCorr()
-                    p_sweep = {}
-                    for k in p:
-                        if int(k.split('_')[-1].split(')')[0]) < ns:
-                            p_sweep[k] = p[k]
-                    p0 = {k: v.mean for (k, v) in priors.items()}
-                    #print('t_min = %d  ns = %d' %(ti,ns))
-                    sys.stdout.write(
-                        'sweeping t_min = %d n_s = %d\r' % (ti, ns))
-                    sys.stdout.flush()
-                    if has_svd:
-                        f_tmp = lsqfit.nonlinear_fit(data=(xx, y_tmp),
-                                                     prior=p_sweep, p0=p0,
-                                                     fcn=fit_funcs.fit_function, svdcut=svdcut)
-                    else:
-                        f_tmp = lsqfit.nonlinear_fit(data=(xx, y_tmp),
-                                                     prior=p_sweep, p0=p0,
-                                                     fcn=fit_funcs.fit_function)
-                    fits[(ti, ns)] = f_tmp
-
-            ylim = None
-            if 'eff_ylim' in x_tmp[list(x_tmp.keys())[0]]:
-                ylim = x_tmp[k]['eff_ylim']
-            ylim = None
-            plot.plot_stability(fits, tmin, n_states, tn_opt,
-                                state, ylim=ylim, save=args.save_figs)
-            if args.es_stability:
-                for i_n in range(1, n_states[-1]):
-                    plot.plot_stability(fits, tmin, n_states, tn_opt, state,
-                                        ylim=ylim, save=args.save_figs, n_plot=i_n, scale=args.scale)
-        print('')
+        analysis.run_stability(args.stability, fp, x, y, gv_data, data_cfg,
+                          es_stability=args.es_stability, svd_test=args.svd_test,
+                          save_figs=args.save_figs, scale=args.scale)
 
     if args.fit:
         fit_funcs = cf.FitCorr()
-        p0 = {k: v.mean for (k, v) in priors.items()}
-        # only pass x for states in fit
-        x_fit = dict()
-        y_fit = dict()
-        fit_lst = [k for k in x if k.split('_')[0] in states]
-        for k in fit_lst:
-            if 'mres' not in k:
-                x_fit[k] = x[k]
-                y_fit[k] = y[k]
-            else:
-                k_res = k.split('_')[0]
-                if k_res not in x_fit:
-                    x_fit[k_res] = x[k]
-                    y_fit[k_res] = y[k_res]
+        # select data to be fit and p0 starting values
+        x_fit, y_fit, p0 = fit_funcs.get_xyp0(priors, states, x, y)
 
+        # are we using the SVD Diagnosis?
         if args.svd_test:
             has_svd = True
             svd_test, svdcut = ld.svd_diagnose(y, data_cfg, x_fit, args.svd_nbs,
                                                svdcut=args.svdcut)
 
+        # run the fit
         if has_svd:
             fit = lsqfit.nonlinear_fit(data=(x_fit, y_fit), prior=priors, p0=p0, fcn=fit_funcs.fit_function,
                                        svdcut=svdcut)
@@ -241,10 +160,12 @@ def main():
         else:
             print(fit)
 
+        # open a GUI if we want to interact with the priors and fit
         if args.gui:
             from lsqfitgui import run_server
             run_server(fit, name="c51 Two-Point Fitter")
 
+        # plot the results on the eff mass data
         if args.eff:
             eff_plots.plot_eff_fit(x_fit, fit)
 

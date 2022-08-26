@@ -252,6 +252,23 @@ class FitCorr(object):
     def __init__(self):
         self.corr_functions = CorrFunction()
 
+    def get_xyp0(self, priors, states, x, y):
+        p0 = {k: v.mean for (k, v) in priors.items()}
+        # only pass x for states in fit
+        x_fit = dict()
+        y_fit = dict()
+        fit_lst = [k for k in x if k.split('_')[0] in states]
+        for k in fit_lst:
+            if 'mres' not in k:
+                x_fit[k] = x[k]
+                y_fit[k] = y[k]
+            else:
+                k_res = k.split('_')[0]
+                if k_res not in x_fit:
+                    x_fit[k_res] = x[k]
+                    y_fit[k_res] = y[k_res]
+        return x_fit, y_fit, p0
+
     def priors(self, prior):
         '''
         only keep priors that are used in fit

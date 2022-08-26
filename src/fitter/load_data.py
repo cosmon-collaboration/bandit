@@ -233,7 +233,7 @@ def svd_processor(data):
         d = d2
     return d
 
-def svd_diagnose(data, data_cfg, x_params, nbs, svdcut=None):
+def svd_diagnose(data, data_cfg, x_params, nbs=50, svdcut=None):
     data_chop = dict()
     for d in data:
         if d in x_params and 'mres' not in d:
