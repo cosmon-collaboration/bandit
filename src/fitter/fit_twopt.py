@@ -11,10 +11,8 @@ import matplotlib.pyplot as plt
 import argparse
 import numpy as np
 np.seterr(invalid='ignore')
-#import tables as h5
 
-
-# user libs
+# c51_corr_analysis libs
 import fitter.plotting as plot
 import fitter.corr_functions as cf
 import fitter.load_data as ld
@@ -74,8 +72,6 @@ def main():
                         help=            'open dashboard for analyzing fit. Must be used together with fit flag. [%(default)s]')
 
     args = parser.parse_args()
-    if args.save_figs and not os.path.exists('figures'):
-        os.makedirs('figures')
     print(args)
     # add path to the input file and load it
     sys.path.append(os.path.dirname(os.path.abspath(args.fit_params)))
@@ -132,6 +128,7 @@ def main():
         except:
             has_svd = False
 
+    # run a stability analysis
     if args.stability:
         analysis.run_stability(args.stability, fp, x, y, gv_data, data_cfg,
                           es_stability=args.es_stability, svd_test=args.svd_test,
@@ -169,135 +166,12 @@ def main():
         if args.eff:
             eff_plots.plot_eff_fit(x_fit, fit)
 
-        if args.save_figs:
-            for k in states:
-                n_s = str(fp.corr_lst[k]['n_state'])
-                plt.figure('m_'+k)
-                plt.savefig('figures/'+k+'_meff_ns'
-                            + n_s+'.pdf', transparent=True)
-                plt.figure('z_'+k)
-                plt.savefig('figures/'+k+'_zeff_ns'
-                            + n_s+'.pdf', transparent=True)
-                if 'exp_r' in fp.corr_lst[k]['type']:
-                    plt.figure('r_'+k)
-                    plt.savefig('figures/'+k+'_ratio_meff_ns'
-                                + n_s+'.pdf', transparent=True)
+        if args.save_figs and args.eff:
+            eff_plots.save_plots()
 
+        # Bootstrap
         if args.bs:
-            # make sure results dir exists
-            if args.bs_write:
-                if not os.path.exists('bs_results'):
-                    os.makedirs('bs_results')
-            if len(args.bs_results.split('/')) == 1:
-                bs_file = 'bs_results/'+args.bs_results
-            else:
-                bs_file = args.bs_results
-            # check if we already wrote this dataset
-            if args.bs_write:
-                have_bs = False
-                if os.path.exists(bs_file):
-                    #with h5.open_file(bs_file,'r') as f5:
-                    with h5py.File(bs_file, 'r') as f5:
-                        if args.bs_path in f5:
-                            if len(f5[args.bs_path]) > 0 and not args.overwrite:
-                                have_bs = True
-                                print(
-                                    'you asked to write bs results to an existing dset and overwrite =', args.overwrite)
-            else:
-                have_bs = False
-            if not have_bs:
-                print('beginning Nbs=%d bootstrap fits' % args.Nbs)
-                import bs_utils as bs
-
-                # let us use the fit posterior to set the initial guess for bs loop
-                p0_bs = dict()
-                for k in fit.p:
-                    p0_bs[k] = fit.p[k].mean
-
-                if not args.bs_seed and 'bs_seed' not in dir(fp):
-                    tmp = input('you have not passed a BS seed nor is it defined in the input file\nenter a seed or hit return for none')
-                    if not tmp:
-                        bs_seed = None
-                    else:
-                        bs_seed = tmp
-                elif 'bs_seed' in dir(fp):
-                    bs_seed = fp.bs_seed
-                if args.bs_seed:
-                    if args.verbose:
-                        print('WARNING: you are overwriting the bs_seed from the input file')
-                    bs_seed = args.bs_seed
-
-                # make BS data
-                corr_bs = {}
-                for k in data_cfg:
-                    corr_bs[k] = bs.bs_corrs(data_cfg[k], Nbs=args.Nbs,
-                                                seed=bs_seed, return_mbs=True)
-                # make BS list for priors
-                p_bs_mean = dict()
-                for k in priors:
-                    p_bs_mean[k] = bs.bs_prior(args.Nbs, mean=priors[k].mean,
-                                            sdev=priors[k].sdev, seed=bs_seed+'_'+k)
-
-                # set up posterior lists of bs results
-                post_bs = dict()
-                for k in fit.p:
-                    post_bs[k] = []
-
-                for bs in range(args.Nbs):
-                    sys.stdout.write('%4d / %d\r' % (bs, args.Nbs))
-                    sys.stdout.flush()
-
-                    ''' all gvar's created in this switch are destroyed at restore_gvar [they are out of scope] '''
-                    gv.switch_gvar()
-
-                    bs_data = dict()
-                    for k in corr_bs:
-                        bs_data[k] = corr_bs[k][bs]
-                    bs_gv = gv.dataset.avg_data(bs_data)
-                    #import IPython; IPython.embed()
-                    if any(['mres' in k for k in bs_gv]):
-                        bs_tmp = {k:v for (k,v) in bs_gv.items() if 'mres' not in k}
-                        for k in [key for key in bs_gv if 'mres' in key]:
-                            mres = k.split('_')[0]
-                            if mres not in bs_tmp:
-                                bs_tmp[mres] = bs_gv[mres+'_MP'] / bs_gv[mres+'_PP']
-                        bs_gv = bs_tmp
-                    y_bs = {k: v[x_fit[k]['t_range']]
-                            for (k, v) in bs_gv.items() if k in states}
-                    p_bs = dict()
-                    for k in p_bs_mean:
-                        p_bs[k] = gv.gvar(p_bs_mean[k][bs], priors[k].sdev)
-                    # do the fit
-                    if has_svd:
-                        fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
-                                                      fcn=fit_funcs.fit_function, svdcut=svdcut)
-                    else:
-                        fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
-                                                      fcn=fit_funcs.fit_function)
-
-                    for r in post_bs:
-                        post_bs[r].append(fit_bs.p[r].mean)
-
-                    ''' end of gvar scope used for bootstrap '''
-                    gv.restore_gvar()
-
-                for r in post_bs:
-                    post_bs[r] = np.array(post_bs[r])
-                if args.bs_write:
-                    # write the results
-                    with h5py.File(bs_file, 'a') as f5:
-                        try:
-                            f5.create_group(args.bs_path)
-                        except Exception as e:
-                            print(e)
-                        for r in post_bs:
-                            if len(post_bs[r]) > 0:
-                                if r in f5[args.bs_path]:
-                                    del f5[args.bs_path+'/'+r]
-                                f5.create_dataset(
-                                    args.bs_path+'/'+r, data=post_bs[r])
-
-                print('DONE')
+            bs_results = analysis.run_bootstrap(args.bs_results, args.bs_write, args.bs_path, args.overwrite, args.Nbs, args.bs_seed, fit, fp, data_cfg, x_fit, args.verbose)
 
         if args.svd_test and args.eff:
             fig = plt.figure('svd_diagnosis', figsize=(7, 4))
@@ -311,7 +185,6 @@ def main():
     if args.fit and args.gui:
         from lsqfitgui import run_server
         run_server(fit, name="c51 Two-Point Fitter")
-
 
 
 if __name__ == "__main__":

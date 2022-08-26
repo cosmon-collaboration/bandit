@@ -166,6 +166,13 @@ class EffectivePlots():
                         x_plot[k], fit.p, ax, color='k', alpha=.1)
                 """
 
+    def save_plots(self):
+        if not os.path.exists('figures'):
+            os.makedirs('figures')
+        for k in self.ax:
+            plt.figure(k)
+            plt.savefig('figures/'+k+'.pdf',transparent=True)
+
 def effective_mass(gvdata, mtype='exp', tau=1):
     ''' Create effective mass data from gvar of the correlation function
         versus time.
