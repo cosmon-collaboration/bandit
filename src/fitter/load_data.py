@@ -2,6 +2,7 @@ import tables as h5
 import numpy as np
 import gvar as gv
 import sys
+import copy
 
 
 '''
@@ -231,3 +232,64 @@ def svd_processor(data):
             d2[k] = d[k+'_MP'] / d[k+'_PP']
         d = d2
     return d
+
+def svd_diagnose(data, data_cfg, x_params, nbs=50, svdcut=None):
+    data_chop = dict()
+    for d in data:
+        if d in x_params and 'mres' not in d:
+            data_chop[d] = data_cfg[d][:,x_params[d]['t_range']]
+        if 'mres' in d and len(d.split('_')) > 1:
+            data_chop[d] = data_cfg[d][:,x_params[d.split('_')[0]]['t_range']]
+
+    svd_test = gv.dataset.svd_diagnosis(data_chop, nbstrap=nbs,
+                                        process_dataset=svd_processor)
+    svd_cut = svd_test.svdcut
+    if svdcut is not None:
+        print('  svd_diagnose.svdcut = %.2e' %svd_test.svdcut)
+        print('          args.svdcut = %.2e' %svdcut)
+        use_svd = input('   use specified svdcut instead of that from svd_diagnosis? [y/n]\n')
+        if use_svd in ['y','Y','yes']:
+            svd_cut = svdcut
+
+    return svd_test, svd_cut
+
+def prepare_xyp(states, u_xp, gv_data):
+
+    x = copy.deepcopy(u_xp.x)
+    # prepare data y
+    y = {k: v[x[k]['t_range']]
+         for (k, v) in gv_data.items() if k.split('_')[0] in states}
+
+    for k in y:
+        if 'exp_r' in x[k]['type']:
+            sp = k.split('_')[-1]
+            ''' REDO THIS SO WE DO NOT REDEFINE DATA '''
+            y[k] = y[k] / gv_data[x[k]['denom'][0]+'_'+sp][x[k]['t_range']]
+            y[k] = y[k] / gv_data[x[k]['denom'][1]+'_'+sp][x[k]['t_range']]
+
+    if any(['mres' in k for k in y]):
+        mres_lst = [k.split('_')[0] for k in y if 'mres' in k]
+        mres_lst = list(set(mres_lst))
+        for k in mres_lst:
+            y[k] = y[k+'_MP'] / y[k+'_PP']
+
+    # prepare priors
+    n_states = dict()
+    for state in states:
+        for k in x:
+            if state in k and 'mres' not in k:
+                n_states[state] = x[k]['n_state']
+
+    priors = dict()
+    for k in u_xp.priors:
+        for state in states:
+            if 'mres' not in k:
+                k_n = int(k.split('_')[-1].split(')')[0])
+                if state == k.split('(')[-1].split('_')[0] and k_n < n_states[state]:
+                    priors[k] = gv.gvar(u_xp.priors[k].mean, u_xp.priors[k].sdev)
+            else:
+                mres = k.split('_')[0]
+                if mres in states:
+                    priors[k] = gv.gvar(u_xp.priors[k].mean, u_xp.priors[k].sdev)
+
+    return x, y, priors

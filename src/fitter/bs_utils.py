@@ -17,6 +17,33 @@ def get_rng(seed: str, verbose=False):
     return rng
 
 
+def get_bs_list(Ndata, Nbs, Mbs=None, seed=None, verbose=False):
+    ''' generate bootstrap resampling of correlation function data
+        Args:
+            - Ndata : Number of data samples (Ncfg for example)
+            - Nbs   : the number of bootstrap samples to generate
+            - Mbs   : the number of random draws per bootstrap to generate
+                      if Mbs != Ncfg, you will have to appropriately rescale
+                      the fluctuations by sqrt( Mbs / Ncfg)
+            - seed:   a string that will be hashed to seed the random number generator
+
+        Return:
+            bs_list : (Nbs, Mbs)
+    '''
+    if Mbs:
+        m_bs = Mbs
+    else:
+        m_bs = Ndata
+
+    # seed the random number generator
+    rng = get_rng(seed,verbose=verbose) if seed else np.random.default_rng()
+
+    # make BS list: [low, high)
+    bs_list = rng.integers(low=0, high=Ndata, size=[Nbs, m_bs])
+
+    return bs_list
+
+
 def bs_corrs(corr, Nbs, Mbs=None, seed=None, return_bs_list=False, return_mbs=False, verbose=False):
     ''' generate bootstrap resampling of correlation function data
         Args:

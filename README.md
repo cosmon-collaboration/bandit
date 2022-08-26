@@ -6,6 +6,7 @@ This fitter is designed to analyze correlation functions generated from lattice 
 - [Installation](#installation)
 - [Example Usage](#example-usage)
 - [Input File Description](#input-file-info)
+- [Contributors](#contributors)
 - [Copyright Notice](#copyright-notice)
 
 ## Installation
@@ -63,6 +64,11 @@ fit_twopt input_file/a09m310_test.py --eff --fit --gui
 
 ## Input File Info
 
+
+## Contributors
+
+- André Walker-Loud ([walkloud](https://github.com/walkloud))
+- Grant Bradely ([gerbradl](https://github.com/gerbradl))
 
 # Copyright Notice
 
