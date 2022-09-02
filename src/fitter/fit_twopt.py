@@ -130,9 +130,7 @@ def main():
 
     # run a stability analysis
     if args.stability:
-        analysis.run_stability(args.stability, fp, x, y, gv_data, data_cfg,
-                          es_stability=args.es_stability, svd_test=args.svd_test,
-                          save_figs=args.save_figs, scale=args.scale)
+        analysis.run_stability(args, fp, x, y, gv_data, data_cfg)
 
     if args.fit:
         fit_funcs = cf.FitCorr()
@@ -171,7 +169,7 @@ def main():
 
         # Bootstrap
         if args.bs:
-            bs_results = analysis.run_bootstrap(args.bs_results, args.bs_write, args.bs_path, args.overwrite, args.Nbs, args.bs_seed, fit, fp, data_cfg, x_fit, args.verbose)
+            bs_results = analysis.run_bootstrap(args, fit, fp, data_cfg, x_fit)
 
         if args.svd_test and args.eff:
             fig = plt.figure('svd_diagnosis', figsize=(7, 4))

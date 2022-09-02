@@ -102,9 +102,7 @@ class EffectivePlots():
                 self.ax['z_'+k].set_ylabel(r'$z_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
                 self.ax['z_'+k].legend(fontsize=20, loc=1)
 
-    def plot_eff_fit(self,
-        x_fit,
-        fit, ):
+    def plot_eff_fit(self, x_fit, fit):
         '''
             x_fit: parameters for fit
             fit  : result of lsqfit.nonlinear_fit
@@ -113,7 +111,10 @@ class EffectivePlots():
 
         x_plot = copy.deepcopy(x_fit)
         for k_sp in x_plot:
-            k,sp = k_sp.split('_')
+            if 'mres' in k_sp:
+                k = k_sp
+            else:
+                k,sp = k_sp.split('_')
             ax = self.ax['m_'+k]
 
             if 't0' in x_fit[k_sp]:
