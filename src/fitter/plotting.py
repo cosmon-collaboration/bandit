@@ -46,6 +46,8 @@ class EffectivePlots():
             else:
                 self.ax['m_'+k] = plt.axes([0.15, 0.15, 0.84, 0.84])
 
+            print(type(self.ax['m_'+k]))
+
             # plot prior on eff plot
             if params.corr_lst[k]['type'] == 'mres':
                 p = priors[k]
@@ -97,12 +99,13 @@ class EffectivePlots():
 
                 axes[-1].set_xlim(params.corr_lst[k]['xlim'])
                 axes[-1].set_xlabel(r'$t/a$', fontsize=20)
-                for ax in axes:
+                for j, ax in enumerate(axes):
                     ax.legend(fontsize=20, loc=1)
                     ax.set_ylabel(r'$z_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
 
                     # NOTE: there should be a different ylim for each snk
                     ax.set_ylim(params.corr_lst[k]['z_ylim'])
+                    self.ax['z_%s_%s'%(k, str(j))] = ax
 
 
     def plot_eff_fit(self,
