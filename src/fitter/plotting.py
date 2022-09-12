@@ -46,8 +46,6 @@ class EffectivePlots():
             else:
                 self.ax['m_'+k] = plt.axes([0.15, 0.15, 0.84, 0.84])
 
-            print(type(self.ax['m_'+k]))
-
             # plot prior on eff plot
             if params.corr_lst[k]['type'] == 'mres':
                 p = priors[k]
