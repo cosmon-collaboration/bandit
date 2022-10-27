@@ -131,18 +131,28 @@ def run_bootstrap(args, fit, fp, data_cfg, x_fit, svdcut=None):
 
         # create bs_list
         Ncfg = data_cfg[next(iter(data_cfg))].shape[0]
-        bs_list = bs.get_bs_list(Ncfg, args.Nbs, seed=bs_seed)
+        bs_list = bs.get_bs_list(Ncfg, args.Nbs, Mbs=args.Mbs, seed=bs_seed)
 
         # make BS list for priors
         p_bs_mean = dict()
         for k in fit.prior:
+            if args.bs0_restrict and '_0' in k:
+                sdev = args.bs0_width * fit.p[k].sdev
+            else:
+                sdev = fit.prior[k].sdev
+            if 'log' in k:
+                dist_type='lognormal'
+            else:
+                dist_type='normal'
             p_bs_mean[k] = bs.bs_prior(args.Nbs, mean=fit.prior[k].mean,
-                                    sdev=fit.prior[k].sdev, seed=bs_seed+'_'+k)
+                                       sdev=sdev, seed=bs_seed+'_'+k, dist=dist_type)
 
         # set up posterior lists of bs results
         post_bs = dict()
         for k in fit.p:
             post_bs[k] = []
+
+        fit_str = []
 
         # loop over bootstraps
         for bs in tqdm.tqdm(range(args.Nbs)):
@@ -176,7 +186,7 @@ def run_bootstrap(args, fit, fp, data_cfg, x_fit, svdcut=None):
             else:
                 fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
                                               fcn=fit_funcs.fit_function)
-
+            fit_str.append(str(fit_bs))
             for r in post_bs:
                 post_bs[r].append(fit_bs.p[r].mean)
 
@@ -198,6 +208,6 @@ def run_bootstrap(args, fit, fp, data_cfg, x_fit, svdcut=None):
                             del f5[args.bs_path+'/'+r]
                         f5.create_dataset(args.bs_path+'/'+r, data=post_bs[r])
 
-        return post_bs
+        return post_bs, fit_str
     else:
         return None
