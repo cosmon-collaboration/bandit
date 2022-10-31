@@ -12,7 +12,6 @@ import fitter.load_data as ld
 import fitter.plotting as plot
 
 
-<<<<<<< HEAD
 def run_stability(args, xp, x, y, gv_data, data_cfg, plot_name):
     states       = args.stability
     es_stability = args.es_stability
@@ -20,10 +19,6 @@ def run_stability(args, xp, x, y, gv_data, data_cfg, plot_name):
     save_figs    = args.save_figs
     scale        = args.scale
 
-=======
-def run_stability(args, xp, x, y, gv_data, data_cfg):
-    states = args.stability
->>>>>>> 8947ad8746e09d5e44034cb7f928ecc1f6a35bfb
     for state in states:
         if 't_sweep' in xp.corr_lst[state]:
             tmin = xp.corr_lst[state]['t_sweep']
