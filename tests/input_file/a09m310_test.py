@@ -170,7 +170,7 @@ for corr in corr_lst:#[k for k in corr_lst if 'mres' not in k]:
             priors['log(%s_dE_%d)' %(corr,n)] = gv.gvar(np.log(2*priors['pion_E_0'].mean), 0.7)
 
             # for z_P, no suppression with n, but for S, smaller overlaps
-            priors['%s_zP_%d' %(corr,n)] = gv.gvar(priors['%s_zP_0' %(corr)].mean, 2*priors['%s_zP_0' %(corr)].sdev)
+            priors['%s_zP_%d' %(corr,n)] = gv.gvar(priors['%s_zP_0' %(corr)].mean, priors['%s_zP_0' %(corr)].mean)
             zS_0 = priors['%s_zS_0' %(corr)]
             if n <= 2:
                 priors['%s_zS_%d' %(corr,n)] = gv.gvar(zS_0.mean, 2*zS_0.sdev)
