@@ -98,7 +98,7 @@ def bs_corrs(corr, Nbs, Mbs=None, seed=None, return_bs_list=False, return_mbs=Fa
         return corr_bs
 
 
-def bs_prior(Nbs, mean=0., sdev=1., seed=None):
+def bs_prior(Nbs, mean=0., sdev=1., seed=None, dist='normal'):
     ''' Generate bootstrap distribution of prior central values
         Args:
             Nbs  : number of values to return
@@ -111,8 +111,12 @@ def bs_prior(Nbs, mean=0., sdev=1., seed=None):
     # seed the random number generator
     rng = get_rng(seed) if seed else np.random.default_rng()
 
-    return rng.normal(loc=mean, scale=sdev, size=Nbs)
-
+    if dist == 'normal':
+        return rng.normal(loc=mean, scale=sdev, size=Nbs)
+    elif dist == 'lognormal':
+        return rng.lognormal(mean=mean, sigma=sdev, size=Nbs)
+    else:
+        sys.exit('you have not given a known distribution, %s' %dist)
 
 def block_data(data, bl):
     ''' Generate "blocked" or "binned" data from original data

@@ -111,7 +111,10 @@ class EffectivePlots():
 
         x_plot = copy.deepcopy(x_fit)
         for k_sp in x_plot:
-            k,sp = k_sp.split('_')
+            if 'mres' in k_sp:
+                k = k_sp
+            else:
+                k,sp = k_sp.split('_')
             ax = self.ax['m_'+k]
 
             if 't0' in x_fit[k_sp]:
