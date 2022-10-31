@@ -6,6 +6,7 @@ data_file = 'data/callat_a09m310_test.h5'
 fit_states = ['mres-L','mres-S', 'pion', 'kaon', 'proton', 'omega']
 #fit_states = ['pion', 'kaon', 'proton', 'omega']
 bs_seed = 'a09m310'
+plot_name = 'a09m310'
 
 corr_lst = {
     # PION

@@ -12,9 +12,12 @@ import fitter.load_data as ld
 import fitter.plotting as plot
 
 
-def run_stability(states, xp, x, y, gv_data, data_cfg,
-                  es_stability=False, svd_test=True,
-                  save_figs=False, scale=[]):
+def run_stability(args, xp, x, y, gv_data, data_cfg, plot_name):
+    states       = args.stability
+    es_stability = args.es_stability
+    svd_test     = args.svd_test
+    save_figs    = args.save_figs
+    scale        = args.scale
 
     for state in states:
         if 't_sweep' in xp.corr_lst[state]:
@@ -75,12 +78,13 @@ def run_stability(states, xp, x, y, gv_data, data_cfg,
 
         ylim = None
 
-        plot.plot_stability(fits, tmin, n_states, tn_opt,
-                            state, ylim=ylim, save=save_figs, scale=scale)
+        plot.plot_stability(fits, tmin, n_states, tn_opt, state,
+                            ylim=ylim, save=save_figs, scale=scale, plot_name=plot_name)
         if es_stability:
             for i_n in range(1, n_states[-1]):
                 plot.plot_stability(fits, tmin, n_states, tn_opt, state,
-                                    ylim=ylim, save=save_figs, n_plot=i_n, scale=scale)
+                                    ylim=ylim, save=save_figs, n_plot=i_n,
+                                    scale=scale, plot_name=plot_name)
 
 
 def run_bootstrap(bs_results, bs_write, bs_path, overwrite, Nbs, bs_seed, fit, fp, data_cfg, x_fit, svdcut=None, verbose=False):

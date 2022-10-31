@@ -48,6 +48,8 @@ def main():
                         help=            'print y vs f(x,p) also? [%(default)s]')
     parser.add_argument('--save_figs',   default=False, action='store_true',
                         help=            'save figs? [%(default)s]')
+    parser.add_argument('--plot_name',   type=str, default='',
+                        help=            'base name for figures [%(default)s]')
     parser.add_argument('--bs',          default=False, action='store_true',
                         help=            'run bootstrap fit? [%(default)s]')
     parser.add_argument('--Nbs',         type=int, default=2000,
@@ -128,11 +130,15 @@ def main():
         except:
             has_svd = False
 
+    # if user passes a base plot name
+    if 'plot_name' in dir(fp):
+        plot_name = fp.plot_name
+    if args.plot_name:
+        plot_name = args.plot_name
+
     # run a stability analysis
     if args.stability:
-        analysis.run_stability(args.stability, fp, x, y, gv_data, data_cfg,
-                          es_stability=args.es_stability, svd_test=args.svd_test,
-                          save_figs=args.save_figs, scale=args.scale)
+        analysis.run_stability(args, fp, x, y, gv_data, data_cfg, plot_name)
 
     if args.fit:
         fit_funcs = cf.FitCorr()
@@ -167,7 +173,7 @@ def main():
             eff_plots.plot_eff_fit(x_fit, fit)
 
         if args.save_figs and args.eff:
-            eff_plots.save_plots()
+            eff_plots.save_plots(name=plot_name)
 
         # Bootstrap
         if args.bs:

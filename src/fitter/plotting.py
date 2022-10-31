@@ -102,9 +102,7 @@ class EffectivePlots():
                 self.ax['z_'+k].set_ylabel(r'$z_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
                 self.ax['z_'+k].legend(fontsize=20, loc=1)
 
-    def plot_eff_fit(self,
-        x_fit,
-        fit, ):
+    def plot_eff_fit(self, x_fit, fit):
         '''
             x_fit: parameters for fit
             fit  : result of lsqfit.nonlinear_fit
@@ -166,12 +164,15 @@ class EffectivePlots():
                         x_plot[k], fit.p, ax, color='k', alpha=.1)
                 """
 
-    def save_plots(self):
+    def save_plots(self, name=''):
         if not os.path.exists('figures'):
             os.makedirs('figures')
         for k in self.ax:
             plt.figure(k)
-            plt.savefig('figures/'+k+'.pdf',transparent=True)
+            if name:
+                plt.savefig('figures/'+name+'_'+k+'.pdf',transparent=True)
+            else:
+                plt.savefig('figures/'+k+'.pdf',transparent=True)
 
 def effective_mass(gvdata, mtype='exp', tau=1):
     ''' Create effective mass data from gvar of the correlation function
@@ -284,7 +285,7 @@ def plot_zeff(ax, dsets, key, ztype='A_snk,src', snksrc=None, mtype='exp', tau=1
 
 
 def plot_stability(fits, tmin, n_states, tn_opt, state,
-                   ylim=None, diff=False, save=True, n_plot=0, scale=None):
+                   ylim=None, diff=False, save=True, n_plot=0, scale=None, plot_name=''):
     fs = 20
     fs_ns = 16
     nn = str(n_plot)
@@ -441,6 +442,11 @@ def plot_stability(fits, tmin, n_states, tn_opt, state,
     ax_w.set_ylim(0, 1.2)
     ax_Q.set_ylabel(r'$Q$', fontsize=fs)
     ax_Q.set_ylim(0, 1.2)
-    if not os.path.exists('figures'):
-        os.makedirs('figures')
-    plt.savefig('figures/'+state+'_E_'+nn+'_stability.pdf', transparent=True)
+
+    if save:
+        if not os.path.exists('figures'):
+            os.makedirs('figures')
+        if plot_name:
+            plt.savefig('figures/'+plot_name+'_'+state+'_E_'+nn+'_stability.pdf', transparent=True)
+        else:
+            plt.savefig('figures/'+state+'_E_'+nn+'_stability.pdf', transparent=True)
