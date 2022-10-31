@@ -12,10 +12,8 @@ import fitter.load_data as ld
 import fitter.plotting as plot
 
 
-def run_stability(states, xp, x, y, gv_data, data_cfg,
-                  es_stability=False, svd_test=True,
-                  save_figs=False, scale=[]):
-
+def run_stability(args, xp, x, y, gv_data, data_cfg):
+    states = args.stability
     for state in states:
         if 't_sweep' in xp.corr_lst[state]:
             tmin = xp.corr_lst[state]['t_sweep']
@@ -43,7 +41,7 @@ def run_stability(states, xp, x, y, gv_data, data_cfg,
                 if state not in k:
                     p_tmp.pop(k)
 
-            if svd_test:
+            if args.svd_test:
                 has_svd = True
                 svd_test, svdcut = ld.svd_diagnose(y_tmp, data_cfg, x_tmp)
                 has_svd = True
@@ -76,39 +74,39 @@ def run_stability(states, xp, x, y, gv_data, data_cfg,
         ylim = None
 
         plot.plot_stability(fits, tmin, n_states, tn_opt,
-                            state, ylim=ylim, save=save_figs, scale=scale)
-        if es_stability:
+                            state, ylim=ylim, save=args.save_figs, scale=args.scale)
+        if args.es_stability:
             for i_n in range(1, n_states[-1]):
                 plot.plot_stability(fits, tmin, n_states, tn_opt, state,
-                                    ylim=ylim, save=save_figs, n_plot=i_n, scale=scale)
+                                    ylim=ylim, save=args.save_figs, n_plot=i_n, scale=args.scale)
 
 
-def run_bootstrap(bs_results, bs_write, bs_path, overwrite, Nbs, bs_seed, fit, fp, data_cfg, x_fit, svdcut=None, verbose=False):
+def run_bootstrap(args, fit, fp, data_cfg, x_fit, svdcut=None):
 
     # make sure results dir exists
-    if bs_write:
+    if args.bs_write:
         if not os.path.exists('bs_results'):
             os.makedirs('bs_results')
-    if len(bs_results.split('/')) == 1:
-        bs_file = 'bs_results/'+bs_results
+    if len(args.bs_results.split('/')) == 1:
+        bs_file = 'bs_results/'+args.bs_results
     else:
-        bs_file = bs_results
+        bs_file = args.bs_results
 
     # check if we already wrote this dataset
-    if bs_write:
+    if args.bs_write:
         have_bs = False
         if os.path.exists(bs_file):
             with h5py.File(bs_file, 'r') as f5:
-                if bs_path in f5:
-                    if len(f5[bs_path]) > 0 and not overwrite:
+                if args.bs_path in f5:
+                    if len(f5[args.bs_path]) > 0 and not args.overwrite:
                         have_bs = True
                         print(
-                            'you asked to write bs results to an existing dset and overwrite =', overwrite)
+                            'you asked to write bs results to an existing dset and overwrite =', args.overwrite)
     else:
         have_bs = False
 
     if not have_bs:
-        print('beginning Nbs=%d bootstrap fits' % Nbs)
+        print('beginning Nbs=%d bootstrap fits' % args.Nbs)
         import fitter.bs_utils as bs
         fit_funcs = cf.FitCorr()
 
@@ -118,7 +116,7 @@ def run_bootstrap(bs_results, bs_write, bs_path, overwrite, Nbs, bs_seed, fit, f
             p0_bs[k] = fit.p[k].mean
 
         # seed bs random number generator
-        if not bs_seed and 'bs_seed' not in dir(fp):
+        if not args.bs_seed and 'bs_seed' not in dir(fp):
             tmp = input('you have not passed a BS seed nor is it defined in the input file\nenter a seed or hit return for none')
             if not tmp:
                 bs_seed = None
@@ -126,28 +124,38 @@ def run_bootstrap(bs_results, bs_write, bs_path, overwrite, Nbs, bs_seed, fit, f
                 bs_seed = tmp
         elif 'bs_seed' in dir(fp):
             bs_seed = fp.bs_seed
-        if bs_seed:
-            if verbose:
+        if args.bs_seed:
+            if args.verbose:
                 print('WARNING: you are overwriting the bs_seed from the input file')
-            bs_seed = bs_seed
+            bs_seed = args.bs_seed
 
         # create bs_list
         Ncfg = data_cfg[next(iter(data_cfg))].shape[0]
-        bs_list = bs.get_bs_list(Ncfg, Nbs, seed=bs_seed)
+        bs_list = bs.get_bs_list(Ncfg, args.Nbs, Mbs=args.Mbs, seed=bs_seed)
 
         # make BS list for priors
         p_bs_mean = dict()
         for k in fit.prior:
-            p_bs_mean[k] = bs.bs_prior(Nbs, mean=fit.prior[k].mean,
-                                    sdev=fit.prior[k].sdev, seed=bs_seed+'_'+k)
+            if args.bs0_restrict and '_0' in k:
+                sdev = args.bs0_width * fit.p[k].sdev
+            else:
+                sdev = fit.prior[k].sdev
+            if 'log' in k:
+                dist_type='lognormal'
+            else:
+                dist_type='normal'
+            p_bs_mean[k] = bs.bs_prior(args.Nbs, mean=fit.prior[k].mean,
+                                       sdev=sdev, seed=bs_seed+'_'+k, dist=dist_type)
 
         # set up posterior lists of bs results
         post_bs = dict()
         for k in fit.p:
             post_bs[k] = []
 
+        fit_str = []
+
         # loop over bootstraps
-        for bs in tqdm.tqdm(range(Nbs)):
+        for bs in tqdm.tqdm(range(args.Nbs)):
             ''' all gvar's created in this switch are destroyed at restore_gvar
                 [they are out of scope] '''
             gv.switch_gvar()
@@ -178,7 +186,7 @@ def run_bootstrap(bs_results, bs_write, bs_path, overwrite, Nbs, bs_seed, fit, f
             else:
                 fit_bs = lsqfit.nonlinear_fit(data=(x_fit, y_bs), prior=p_bs, p0=p0_bs,
                                               fcn=fit_funcs.fit_function)
-
+            fit_str.append(str(fit_bs))
             for r in post_bs:
                 post_bs[r].append(fit_bs.p[r].mean)
 
@@ -187,19 +195,19 @@ def run_bootstrap(bs_results, bs_write, bs_path, overwrite, Nbs, bs_seed, fit, f
 
         for r in post_bs:
             post_bs[r] = np.array(post_bs[r])
-        if bs_write:
+        if args.bs_write:
             # write the results
             with h5py.File(bs_file, 'a') as f5:
                 try:
-                    f5.create_group(bs_path)
+                    f5.create_group(args.bs_path)
                 except Exception as e:
                     print(e)
                 for r in post_bs:
                     if len(post_bs[r]) > 0:
-                        if r in f5[bs_path]:
-                            del f5[bs_path+'/'+r]
-                        f5.create_dataset(bs_path+'/'+r, data=post_bs[r])
+                        if r in f5[args.bs_path]:
+                            del f5[args.bs_path+'/'+r]
+                        f5.create_dataset(args.bs_path+'/'+r, data=post_bs[r])
 
-        return post_bs
+        return post_bs, fit_str
     else:
         return None

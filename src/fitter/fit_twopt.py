@@ -52,8 +52,14 @@ def main():
                         help=            'run bootstrap fit? [%(default)s]')
     parser.add_argument('--Nbs',         type=int, default=2000,
                         help=            'specify the number of BS samples to compute [%(default)s]')
+    parser.add_argument('--Mbs',         type=int, default=None,
+                        help=            'number of random draws per bootstrap sample [%(default)s]')
     parser.add_argument('--bs_seed',     default=None,
                         help=            'set a string to seed the bootstrap - None will be random [%(default)s]')
+    parser.add_argument('--bs0_restrict',default=True, action='store_false',
+                        help=            'constrain ground state mean sampling with b0 posterior')
+    parser.add_argument('--bs0_width',   type=float, default=5.0,
+                        help=            'multiplication factor of posterior width for ground state prior mean sampling')
     parser.add_argument('--bs_write',    default=True, action='store_false',
                         help=            'write bs results to file? [%(default)s]')
     parser.add_argument('--bs_results',  default='bs_results/spectrum_bs.h5',
@@ -130,9 +136,7 @@ def main():
 
     # run a stability analysis
     if args.stability:
-        analysis.run_stability(args.stability, fp, x, y, gv_data, data_cfg,
-                          es_stability=args.es_stability, svd_test=args.svd_test,
-                          save_figs=args.save_figs, scale=args.scale)
+        analysis.run_stability(args, fp, x, y, gv_data, data_cfg)
 
     if args.fit:
         fit_funcs = cf.FitCorr()
@@ -171,7 +175,7 @@ def main():
 
         # Bootstrap
         if args.bs:
-            bs_results = analysis.run_bootstrap(args.bs_results, args.bs_write, args.bs_path, args.overwrite, args.Nbs, args.bs_seed, fit, fp, data_cfg, x_fit, args.verbose)
+            bs_results, bs_fit_report = analysis.run_bootstrap(args, fit, fp, data_cfg, x_fit)
 
         if args.svd_test and args.eff:
             fig = plt.figure('svd_diagnosis', figsize=(7, 4))
