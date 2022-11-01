@@ -14,11 +14,11 @@ class EffectivePlots():
         self.ax = {}
 
     def make_eff_plots(self,
-        states,          # what states to make plot for
-        params,          # user specified plotting parameters
-        priors,          # user specified priors
-        gv_data,         # dictionary containing data in gvar format
-        scale=[] # show plots live?
+        states,    # what states to make plot for
+        params,    # user specified plotting parameters
+        priors,    # user specified priors
+        gv_data,   # dictionary containing data in gvar format
+        scale=[]   # add physical scale on right axis
         ):
         ''' Make dictionary of effective mass, and effective overlap factor plots
 
@@ -88,19 +88,32 @@ class EffectivePlots():
                 fig = plt.figure('z_'+k, figsize=figsize)
                 ''' NOTE: this has to change to split different z-factors
                 '''
-                self.ax['z_'+k] = plt.axes([0.15, 0.15, 0.84, 0.84])
-
+                self.ax['z_'+k] = []
                 snksrc = {'snks': params.corr_lst[k]['snks'],
                           'srcs': params.corr_lst[k]['srcs']}
+                N_snk = len(params.corr_lst[k]['snks'])
+                h_snk = 0.84/N_snk
+                for i_snk, snk in enumerate(params.corr_lst[k]['snks']):
+                    self.ax['z_'+k].append(plt.axes([0.15, 0.15+i_snk*h_snk, 0.84, h_snk]))
+
+                    # plot prior
+                    p = priors[k+'_z%s_0' %snk]
+                    self.ax['z_'+k][i_snk].axhspan(p.mean -p.sdev, p.mean +p.sdev, color='k', alpha=.2)
+
                 mtype = params.corr_lst[k]['type']
                 ztype = params.corr_lst[k]['ztype']
-                plot_zeff(self.ax['z_'+k], gv_data, k, ztype=ztype, mtype=mtype,
-                        snksrc=snksrc, colors=clrs)
-                self.ax['z_'+k].set_xlim(params.corr_lst[k]['xlim'])
-                self.ax['z_'+k].set_ylim(params.corr_lst[k]['z_ylim'])
-                self.ax['z_'+k].set_xlabel(r'$t/a$', fontsize=20)
-                self.ax['z_'+k].set_ylabel(r'$z_{\rm eff}^{\rm %s}(t)$' % k, fontsize=20)
-                self.ax['z_'+k].legend(fontsize=20, loc=1)
+                plot_zeff(self.ax['z_'+k], gv_data, k, xlim=params.corr_lst[k]['t_range'],
+                        ztype=ztype, mtype=mtype, snksrc=snksrc, colors=clrs)
+                for i_snk, snk in enumerate(params.corr_lst[k]['snks']):
+                    self.ax['z_'+k][i_snk].set_xlim(params.corr_lst[k]['xlim'])
+                    self.ax['z_'+k][i_snk].set_ylabel(r'$z_{%s,\rm eff}^{\rm %s}(t)$' % (snk,k), fontsize=20)
+                    if i_snk > 0:
+                        self.ax['z_'+k][i_snk].set_xticklabels([])
+                self.ax['z_'+k][0].set_xlabel(r'$t/a$', fontsize=20)
+                self.ax['z_'+k][0].get_yaxis().get_offset_text().set_x(-0.075)
+                self.ax['z_'+k][0].get_yaxis().get_offset_text().set_y(-0.2)
+                #self.ax['z_'+k].legend(fontsize=20, loc=1)
+
 
     def plot_eff_fit(self, x_fit, fit):
         '''
@@ -228,33 +241,33 @@ def plot_mres(ax, dsets, key, mtype='exp', tau=1, colors=None, offset=0, denom_k
                     mfc='None', label=label)
 
 
-def plot_zeff(ax, dsets, key, ztype='A_snk,src', snksrc=None, mtype='exp', tau=1, colors=None):
+def plot_zeff(ax, dsets, key, xlim, ztype='A_snk,src', snksrc=None, mtype='exp', tau=1, colors=None):
     lst = [k for k in dsets if key in k]
     if ztype == 'A_snk,src':
         for k in lst:
             lbl = k.split('_')[-1]
             eff = effective_mass(dsets[k], mtype=mtype, tau=tau)
-            t = np.arange(eff.shape[0])
+            t   = np.arange(eff.shape[0])
             if 'exp' in mtype:
                 zeff = np.exp(eff * t) * dsets[k][:-1]
             elif mtype == 'cosh':
                 zeff = dsets[k][:-1] / \
                     (np.exp(-eff * t) + np.exp(-eff * (len(t)-t)))
-            z = [k.mean for k in zeff]
+            z  = [k.mean for k in zeff]
             dz = [k.sdev for k in zeff]
             if colors is not None:
-                ax.errorbar(t, z, yerr=dz, linestyle='None', marker='o',
+                ax[0].errorbar(t, z, yerr=dz, linestyle='None', marker='o',
                             color=colors[lbl], mfc='None', label=lbl)
             else:
-                ax.errorbar(t, z, yerr=dz, linestyle='None', marker='o',
+                ax[0].errorbar(t, z, yerr=dz, linestyle='None', marker='o',
                             mfc='None', label=lbl)
     elif ztype == 'z_snk z_src':
-        for snk in snksrc['snks']:
+        for i_snk, snk in enumerate(snksrc['snks']):
             src = snksrc['srcs'][0]  # assume single source for now
-            k = key+'_'+snk+src
+            k   = key+'_'+snk+src
             lbl = r'$z_{\rm %s}$' % snk
             eff = effective_mass(dsets[k], mtype=mtype, tau=tau)
-            t = np.arange(eff.shape[0])
+            t   = np.arange(eff.shape[0])
 
             if 'exp' in mtype:
                 # we have to cut the final t-slice
@@ -265,7 +278,7 @@ def plot_zeff(ax, dsets, key, ztype='A_snk,src', snksrc=None, mtype='exp', tau=1
             # we don't want the last entry (wrap around effects)
             #zeff = zeff[:-1]
             if snk == src:
-                z = [d.mean for d in np.sqrt(zeff)]
+                z  = [d.mean for d in np.sqrt(zeff)]
                 dz = [d.sdev for d in np.sqrt(zeff)]
             else:
                 k2 = key+'_'+src+src
@@ -276,15 +289,17 @@ def plot_zeff(ax, dsets, key, ztype='A_snk,src', snksrc=None, mtype='exp', tau=1
                     zeff2 = dsets[k2][:-1] / \
                         (np.exp(-eff * t) + np.exp(-eff * (len(t)-t)))
                 #zeff2 = zeff2[:-1]
-                z = [d.mean for d in zeff / np.sqrt(zeff2)]
+                z  = [d.mean for d in zeff / np.sqrt(zeff2)]
                 dz = [d.sdev for d in zeff / np.sqrt(zeff2)]
 
             if colors is not None:
-                ax.errorbar(t, z, yerr=dz, linestyle='None', marker='o',
+                ax[i_snk].errorbar(t, z, yerr=dz, linestyle='None', marker='o',
                             color=colors[snk+src], mfc='None', label=lbl)
             else:
-                ax.errorbar(t, z, yerr=dz, linestyle='None', marker='o',
+                ax[i_snk].errorbar(t, z, yerr=dz, linestyle='None', marker='o',
                             mfc='None', label=lbl)
+            zeff = np.array(z)[xlim]
+            ax[i_snk].set_ylim(0.5*zeff.mean(), 1.5*zeff.mean())
 
 
 def plot_stability(fits, tmin, n_states, tn_opt, state,

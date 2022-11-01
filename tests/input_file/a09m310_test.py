@@ -141,9 +141,9 @@ corr_lst = {
 priors = gv.BufferDict()
 x      = dict()
 
-priors['proton_E_0']  = gv.gvar(0.5, .025)
-priors['proton_zS_0'] = gv.gvar(2.0e-5, 1.e-5)
-priors['proton_zP_0'] = gv.gvar(2.5e-3, 1.e-3)
+priors['proton_E_0']  = gv.gvar(0.495, .025)
+priors['proton_zS_0'] = gv.gvar(2.2e-5, 0.5e-5)
+priors['proton_zP_0'] = gv.gvar(2.3e-3, 0.5e-3)
 
 priors['omega_E_0']  = gv.gvar(0.75, .06)
 priors['omega_zS_0'] = gv.gvar(3e-5, 1.e-5)
