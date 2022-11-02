@@ -188,6 +188,11 @@ def main():
         if args.svd_test and args.eff:
             fig = plt.figure('svd_diagnosis', figsize=(7, 4))
             svd_test.plot_ratio(show=True)
+
+    # clean up matplotlib.pyplot offsetText location
+    #if args.eff:
+    #    eff_plots.fix_offset()
+
     if args.interact:
         import IPython; IPython.embed()
 
