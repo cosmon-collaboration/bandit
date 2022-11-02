@@ -40,7 +40,7 @@ popd
 ```
 This will result in an installation that claims there are pip install errors, but in practice, the installation works.  To test success, type
 ```
-which fit_twopt
+which fit_corr
 ```
 and if this returns a binary, the installation has worked.
 
@@ -52,13 +52,13 @@ and if this returns a binary, the installation has worked.
 To build up a fit, one usually looks at effective mass plots etc., and starts to guess the input ground state energy and overlap factors.  With a working installation, you should be able (from the source directory) do
 ```
 cd c51_corr_analysis/tests
-fit_twopt input_file/a09m310_test.py --eff --fit
+fit_corr input_file/a09m310_test.py --eff --fit
 ```
 which will generate effective mass plots and perform the fit of the states specified in the input file which is included in the `tests/data` directory.
 
 If you have installed `lsqfit-gui`, you can add
 ```
-fit_twopt input_file/a09m310_test.py --eff --fit --gui
+fit_corr input_file/a09m310_test.py --eff --fit --gui
 ```
 
 

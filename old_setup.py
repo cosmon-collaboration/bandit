@@ -41,7 +41,7 @@ setup(
         include=["fitter"],
         exclude=[]),
     install_requires=REQUIREMENTS,
-    entry_points={"console_scripts": ["fit_twopt=fitter.fit_twopt:main"]},
+    entry_points={"console_scripts": ["fit_corr=fitter.fit_corr:main"]},
     #extras_require={"dev": REQUIREMENTS_DEV},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
