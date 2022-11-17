@@ -23,13 +23,14 @@ corr_lst = {
         'type'     :'cosh',
         'ztype'    :'z_snk z_src',
         'z_ylim'   :[0.055,0.26],
-        # fit params
+        'eff_ylim' :[0.133,0.1349],
+        # optimal fit params
         'n_state'  :3,
         'T'        :96,
         't_range'  :np.arange(5,48),
+        # stability fit parameters
         't_sweep'  :range(2,28),
         'n_sweep'  :range(1,6),
-        'eff_ylim' :[0.133,0.1349]
     },
     # KAON
     'kaon':{
@@ -56,8 +57,8 @@ corr_lst = {
     # MRES_L
     'mres-L':{
         'corr_array':False,
-        'dset_MP'   :['a09m310/mres-L_MP'],
-        'dset_PP'   :['a09m310/mres-L_PP'],
+        'dset_MP'   :['a09m310/mp_l'],
+        'dset_PP'   :['a09m310/pp_l'],
         'weights'   :[1],
         't_reverse' :[False],
         'fold'      :True,
@@ -75,8 +76,8 @@ corr_lst = {
     # MRES_S
     'mres-S':{
         'corr_array':False,
-        'dset_MP'   :['a09m310/mres-S_MP'],
-        'dset_PP'   :['a09m310/mres-S_PP'],
+        'dset_MP'   :['a09m310/mp_s'],
+        'dset_PP'   :['a09m310/pp_s'],
         'weights'   :[1],
         't_reverse' :[False],
         'fold'      :True,
@@ -143,14 +144,14 @@ x      = dict()
 
 priors['proton_E_0']  = gv.gvar(0.495, .025)
 priors['proton_zS_0'] = gv.gvar(2.2e-5, 0.5e-5)
-priors['proton_zP_0'] = gv.gvar(2.3e-3, 0.5e-3)
+priors['proton_zP_0'] = gv.gvar(1.2e-3, 0.25e-3)
 
 priors['omega_E_0']  = gv.gvar(0.75, .06)
 priors['omega_zS_0'] = gv.gvar(3e-5, 1.e-5)
 priors['omega_zP_0'] = gv.gvar(.0025, .001)
 
 priors['pion_E_0']  = gv.gvar(0.14, .006)
-priors['pion_zS_0'] = gv.gvar(5e-3, 5e-4)
+priors['pion_zS_0'] = gv.gvar(4.7e-3, 5e-4)
 priors['pion_zP_0'] = gv.gvar(0.125,  0.015)
 
 priors['kaon_E_0']  = gv.gvar(0.241, .006)
@@ -171,11 +172,12 @@ for corr in corr_lst:#[k for k in corr_lst if 'mres' not in k]:
 
             # for z_P, no suppression with n, but for S, smaller overlaps
             priors['%s_zP_%d' %(corr,n)] = gv.gvar(priors['%s_zP_0' %(corr)].mean, priors['%s_zP_0' %(corr)].mean)
-            zS_0 = priors['%s_zS_0' %(corr)]
+            zS_tag = 'S'
+            zS_0 = priors['%s_z%s_0' %(corr, zS_tag)]
             if n <= 2:
-                priors['%s_zS_%d' %(corr,n)] = gv.gvar(zS_0.mean, 2*zS_0.sdev)
+                priors['%s_z%s_%d' %(corr, zS_tag, n)] = gv.gvar(zS_0.mean, zS_0.mean)
             else:
-                priors['%s_zS_%d' %(corr,n)] = gv.gvar(zS_0.mean/2, zS_0.sdev)
+                priors['%s_z%s_%d' %(corr, zS_tag, n)] = gv.gvar(zS_0.mean/2, zS_0.mean/2)
     # x-params
     for snk in corr_lst[corr]['snks']:
         sp = snk+corr_lst[corr]['srcs'][0]
