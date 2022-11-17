@@ -97,8 +97,12 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
             if corr_dict[corr]['fold']:
                 data = 0.5*(data + time_reverse(data))
             # populate into [Ncfg, Nt] arrays
-            for i, snk in enumerate(corr_dict[corr]['snks']):
-                for j, src in enumerate(corr_dict[corr]['srcs']):
+            for j, src in enumerate(corr_dict[corr]['srcs']):
+                if len(corr_dict[corr]['srcs']) == 1:
+                    snks = corr_dict[corr]['snks']
+                else:
+                    snks = corr_dict[corr]['snks'][j]
+                for i, snk in enumerate(snks):
                     if 'normalize' in corr_dict[corr] and corr_dict[corr]['normalize']:
                         corrs[corr+'_'+snk+src] = data[:, :, i, j] / \
                             data.mean(axis=0)[0, i, j]
@@ -127,8 +131,12 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
                 corrs[corr+'_PP'] = data[...,1]
 
             else:
-                for i, snk in enumerate(corr_dict[corr]['snks']):
-                    for j, src in enumerate(corr_dict[corr]['srcs']):
+                for j, src in enumerate(corr_dict[corr]['srcs']):
+                    if len(corr_dict[corr]['srcs']) == 1:
+                        snks = corr_dict[corr]['snks']
+                    else:
+                        snks = corr_dict[corr]['snks'][j]
+                    for i, snk in enumerate(snks):
                         with h5.open_file(f5_files[0], 'r') as f5:
                             d_set = dsets[0] % {'SNK': snk, 'SRC': src}
                             data = np.zeros_like(f5.get_node('/'+d_set).read())
