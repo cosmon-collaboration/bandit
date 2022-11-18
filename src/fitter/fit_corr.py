@@ -59,9 +59,9 @@ def main():
     parser.add_argument('--bs_seed',     default=None,
                         help=            'set a string to seed the bootstrap - None will be random [%(default)s]')
     parser.add_argument('--bs0_restrict',default=True, action='store_false',
-                        help=            'constrain ground state mean sampling with b0 posterior')
+                        help=            'constrain ground state mean sampling with b0 posterior [%(default)s]')
     parser.add_argument('--bs0_width',   type=float, default=5.0,
-                        help=            'multiplication factor of posterior width for ground state prior mean sampling')
+                        help=            'multiplication factor of posterior width for ground state prior mean sampling [%(default)s]')
     parser.add_argument('--bs_write',    default=True, action='store_false',
                         help=            'write bs results to file? [%(default)s]')
     parser.add_argument('--bs_results',  default='bs_results/spectrum_bs.h5',

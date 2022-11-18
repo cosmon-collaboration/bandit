@@ -216,4 +216,4 @@ def run_bootstrap(args, fit, fp, data_cfg, x_fit, svdcut=None):
 
         return post_bs, fit_str
     else:
-        return None
+        sys.exit('not running BS - bs_results exist')

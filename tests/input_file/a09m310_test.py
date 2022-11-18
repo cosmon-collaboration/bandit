@@ -108,8 +108,8 @@ corr_lst = {
         'ztype'    :'z_snk z_src',
         'z_ylim'   :[0.,0.0039],
         # fit params
-        'n_state'  :3,
-        't_range'  :np.arange(5,17),
+        'n_state'  :4,
+        't_range'  :np.arange(6,17),
         't_sweep'  :range(2,16),
         'n_sweep'  :range(1,6),
     },
@@ -131,7 +131,7 @@ corr_lst = {
         #'z_ylim'   :[0.,5],
         #'normalize':True,
         # fit params
-        'n_state'  :3,
+        'n_state'  :4,
         't_range'  :np.arange(10,23),
         't_sweep'  :range(2,16),
         'n_sweep'  :range(1,6),
@@ -171,13 +171,15 @@ for corr in corr_lst:#[k for k in corr_lst if 'mres' not in k]:
             priors['log(%s_dE_%d)' %(corr,n)] = gv.gvar(np.log(2*priors['pion_E_0'].mean), 0.7)
 
             # for z_P, no suppression with n, but for S, smaller overlaps
-            priors['%s_zP_%d' %(corr,n)] = gv.gvar(priors['%s_zP_0' %(corr)].mean, priors['%s_zP_0' %(corr)].mean)
+            zP_0 = priors['%s_zP_0' %(corr)]
+            priors['%s_zP_%d' %(corr,n)] = gv.gvar(zP_0.mean, 3*zP_0.mean)
+
             zS_tag = 'S'
             zS_0 = priors['%s_z%s_0' %(corr, zS_tag)]
             if n <= 2:
-                priors['%s_z%s_%d' %(corr, zS_tag, n)] = gv.gvar(zS_0.mean, zS_0.mean)
+                priors['%s_z%s_%d' %(corr, zS_tag, n)] = gv.gvar(zS_0.mean, 2*zS_0.mean)
             else:
-                priors['%s_z%s_%d' %(corr, zS_tag, n)] = gv.gvar(zS_0.mean/2, zS_0.mean/2)
+                priors['%s_z%s_%d' %(corr, zS_tag, n)] = gv.gvar(0, zS_0.mean)
     # x-params
     for snk in corr_lst[corr]['snks']:
         sp = snk+corr_lst[corr]['srcs'][0]
