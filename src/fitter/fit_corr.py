@@ -100,18 +100,43 @@ def main():
         bl = fp.block
     if args.block != 1: # allow cl override
         bl = args.block
-    if reweight:
-        rw_files = fp.rw_files
-        rw_path = fp.rw_path
-        gv_data = ld.load_h5(fp.data_file, fp.corr_lst, rw=[rw_files, rw_path], bl=bl,
-                             uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all)
-        data_cfg = ld.load_h5(fp.data_file, fp.corr_lst, rw=[rw_files, rw_path], bl=bl,
-                             uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all, return_gv=False, verbose=False)
+
+    # do we have a product of correlation functions?
+    if any(['product' in v['type'] for k,v in fp.corr_lst.items()]):
+        # load data files
+        corr_lst = {k:v for k,v in fp.corr_lst.items() if 'product' not in v['type']}
+        data_cfg = ld.load_h5(fp.data_file, corr_lst, bl=bl, 
+                                uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all, 
+                                return_gv=False, verbose=False)
+        # make bootstrap data
+        import fitter.bs_utils as bs
+        Ncfg = data_cfg[next(iter(data_cfg))].shape[0]
+        bs_list = bs.get_bs_list(Ncfg, args.Nbs, Mbs=args.Mbs, seed=args.bs_seed)
+
+        data_bs = {}
+        for dset in data_cfg:
+            data_bs[dset] = data_cfg[dset][bs_list].mean(axis=0)
+        for corr in [k for k,v in fp.corr_lst.items() if 'product' in v['type']]:
+            for snk in fp.corr_lst[corr]['snks']:
+                for src in fp.corr_lst[corr]['srcs']:
+                    data_bs[corr+'_'+snk+src] = np.ones_like(data_bs[fp.corr_lst[corr]['dsets'][0]+'_'+snk+src])
+                    for i_d, dset in enumerate(fp.corr_lst[corr]['dsets']):
+                        data_bs[corr+'_'+snk+src] *= data_bs[dset+'_'+snk+src] ** (fp.corr_lst[corr]['power'][i_d])
+        gv_data = gv.dataset.avg_data(data_bs, bstrap=True)
+
     else:
-        gv_data = ld.load_h5(fp.data_file, fp.corr_lst, bl=bl,
-                             uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all)
-        data_cfg = ld.load_h5(fp.data_file, fp.corr_lst, bl=bl,
-                             uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all, return_gv=False, verbose=False)
+        if reweight:
+            rw_files = fp.rw_files
+            rw_path = fp.rw_path
+            gv_data = ld.load_h5(fp.data_file, fp.corr_lst, rw=[rw_files, rw_path], bl=bl,
+                                uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all)
+            data_cfg = ld.load_h5(fp.data_file, fp.corr_lst, rw=[rw_files, rw_path], bl=bl,
+                                uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all, return_gv=False, verbose=False)
+        else:
+            gv_data = ld.load_h5(fp.data_file, fp.corr_lst, bl=bl,
+                                uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all)
+            data_cfg = ld.load_h5(fp.data_file, fp.corr_lst, bl=bl,
+                                uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all, return_gv=False, verbose=False)
     if args.states:
         states = args.states
     else:
