@@ -20,6 +20,11 @@ skip these two steps unless you want to test a "clean" install - ALSO - they req
 conda create -n bare3.8 python=3.8
 conda activate bare3.8
 ```
+For later retesting, to remove the evn, activate a different env, and then
+```
+conda env remove -n bare3.8
+```
+
 ### Optional LSQFIT-GUI
 One can install the OPTIONAL `lsqfit-gui` utility that is very convenient for estimating priors.
 ```

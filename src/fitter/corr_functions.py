@@ -236,6 +236,16 @@ class CorrFunction:
             elif x['type'] == 'exp_gs':
                 corr = self.exp_gs(x, p)
                 corr_p = self.exp_gs(xp, p)
+            elif x['type'] == 'product_exp':
+                corr = 1
+                corr_p = 1
+                for state,c_p in zip(x['dsets'], x['power']):
+                    x_state  = {k:v for k,v in x.items()}
+                    xp_state = {k:v for k,v in xp.items()}
+                    x_state['state']  = state
+                    xp_state['state'] = state
+                    corr   = corr * self.exp(x_state, p) ** c_p
+                    corr_p = corr_p * self.exp(xp_state, p) ** c_p
             meff = 1/tau * np.log(corr / corr_p)
         elif x['type'] == 'mres':
             corr = self.mres(x,p)
@@ -289,7 +299,16 @@ class FitCorr(object):
         for k in x:
             if x[k]['type'] in dir(self.corr_functions):
                 r[k] = getattr(self.corr_functions, x[k]['type'])(x[k],p)
-            # NOTE: we should move exp_r and exp_r_conspire into corr_functions
+            # NOTE: we should move product_exp, exp_r and exp_r_conspire into corr_functions
+            elif x[k]['type'] == 'product_exp':
+                sp = k.split('_')[-1]
+                r[k] = 1
+                #self.corr_functions.exp(x[x[k]['dsets'][0]+'_'+sp], p) ** x[k]['power'][0]
+                for corr,c_p in zip(x[k]['dsets'], x[k]['power']):
+                    #print('r[%s] *= exp(x[%s_%s], p) ** %5f' %(k,corr,sp,c_p))
+                    #print(x[corr+'_'+sp])
+                    r[k] = r[k] * self.corr_functions.exp(x[corr+'_'+sp], p) ** c_p
+
             elif x[k]['type'] == 'exp_r':
                 sp = k.split('_')[-1]
                 r[k] = self.corr_functions.two_h_ratio(x[k], p)

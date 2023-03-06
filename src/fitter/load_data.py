@@ -232,22 +232,31 @@ def block_data(data, bl):
     return corr_bl
 
 def svd_processor(data):
-    d = gv.dataset.avg_data(data)
+    if any(['gmo' in k for k in data]):
+        d = gv.dataset.avg_data(data, bstrap=True)
+    else:
+        d = gv.dataset.avg_data(data)
     if any(['mres' in k for k in d]):
         d2 = gv.BufferDict({k:v for k,v in d.items() if 'mres' not in k})
-        mres = list(set([k.split('_')[0] for k in d if 'mres' in k]))
-        for k in mres:
-            d2[k] = d[k+'_MP'] / d[k+'_PP']
+        if 'mres' in k:
+            mres = list(set([k.split('_')[0] for k in d if 'mres' in k]))
+            for k in mres:
+                d2[k] = d[k+'_MP'] / d[k+'_PP']
         d = d2
+    
     return d
 
-def svd_diagnose(data, data_cfg, x_params, nbs=50, svdcut=None):
+def svd_diagnose(data, data_cfg, x_params, bs_data=None, nbs=50, svdcut=None):
     data_chop = dict()
+    if bs_data:
+        data_use = bs_data
+    else:
+        data_use = data_cfg
     for d in data:
         if d in x_params and 'mres' not in d:
-            data_chop[d] = data_cfg[d][:,x_params[d]['t_range']]
+            data_chop[d] = data_use[d][:,x_params[d]['t_range']]
         if 'mres' in d and len(d.split('_')) > 1:
-            data_chop[d] = data_cfg[d][:,x_params[d.split('_')[0]]['t_range']]
+            data_chop[d] = data_use[d][:,x_params[d.split('_')[0]]['t_range']]
 
     svd_test = gv.dataset.svd_diagnosis(data_chop, nbstrap=nbs,
                                         process_dataset=svd_processor)

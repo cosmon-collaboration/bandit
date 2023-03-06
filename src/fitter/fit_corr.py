@@ -104,6 +104,7 @@ def main():
     # do we have a product of correlation functions?
     if any(['product' in v['type'] for k,v in fp.corr_lst.items()]):
         # load data files
+        print('making data with bootstrap')
         corr_lst = {k:v for k,v in fp.corr_lst.items() if 'product' not in v['type']}
         data_cfg = ld.load_h5(fp.data_file, corr_lst, bl=bl, 
                                 uncorr_corrs=args.uncorr_corrs, uncorr_all=args.uncorr_all, 
@@ -175,12 +176,16 @@ def main():
         fit_funcs = cf.FitCorr()
         # select data to be fit and p0 starting values
         x_fit, y_fit, p0 = fit_funcs.get_xyp0(priors, states, x, y)
-
+        #import IPython; IPython.embed()
         # are we using the SVD Diagnosis?
         if args.svd_test:
+            if any(['product' in v['type'] for k,v in fp.corr_lst.items()]):
+                bs_data = data_bs
+            else:
+                bs_data = None
             has_svd = True
-            svd_test, svdcut = ld.svd_diagnose(y, data_cfg, x_fit, args.svd_nbs,
-                                               svdcut=args.svdcut)
+            svd_test, svdcut = ld.svd_diagnose(y, data_cfg, x_fit, bs_data=bs_data,
+                                               nbs=args.svd_nbs, svdcut=args.svdcut)
 
         # run the fit
         if has_svd:
