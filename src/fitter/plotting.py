@@ -112,7 +112,7 @@ class EffectivePlots():
                         snks = params.corr_lst[k]['snks'][j_src]
                     for i_snk, snk in enumerate(snks):
                         self.ax['z_'+k][snk+'-'+src] = \
-                            plt.axes([t_src+j_src*(t_src+h_src), 0.15+i_snk*v_snk, h_src, v_snk])
+                            plt.axes([t_src+j_src*(t_src+h_src), 0.15+(N_snk-i_snk-1)*v_snk, h_src, v_snk])
 
                         # plot prior
                         try:
