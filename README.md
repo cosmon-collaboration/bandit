@@ -15,11 +15,19 @@ This package requires the [lsqfit](https://github.com/gplepage/lsqfit) and [gvar
 This package is now locally pip-installable in `editable` mode (which means, you can actively develop the code and re-install quickly).  Tested locally with a clean anaconda installation, the following works for installing on a mac OS at least.
 
 ### Make a clean environment
-skip these two steps unless you want to test a "clean" install - ALSO - they require an [Anaconda Python](https://www.anaconda.com) installation to have the `conda` util.  You can use the package installer - or, they provide bash script intallers.  Follow the [install instructions](https://docs.anaconda.com/anaconda/install/mac-os/)
+skip these two steps unless you want to test a "clean" install - ALSO - they require an [Anaconda Python](https://www.anaconda.com) installation to have the `conda` util.  You can use the package installer - or, they provide bash script installers.  Follow the [install instructions](https://docs.anaconda.com/anaconda/install/mac-os/)
 ```
 conda create -n bare3.8 python=3.8
 conda activate bare3.8
 ```
+When you are finished, the environment can be removed
+```
+conda remove -n bare3.8 --all
+```
+
+
+
+
 ### Optional LSQFIT-GUI
 One can install the OPTIONAL `lsqfit-gui` utility that is very convenient for estimating priors.
 ```
@@ -31,6 +39,7 @@ pip install [--user] -e .
 popd
 ```
 Ignore the "ERROR" raised by the install - it works, but still throws an error.  We are working to understand how to fix that message.
+
 ### Main Code
 ```
 git clone https://github.com/callat-qcd/c51_corr_analysis
