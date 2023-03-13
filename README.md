@@ -25,21 +25,6 @@ When you are finished, the environment can be removed
 conda remove -n bare3.8 --all
 ```
 
-
-
-
-### Optional LSQFIT-GUI
-One can install the OPTIONAL `lsqfit-gui` utility that is very convenient for estimating priors.
-```
-cd <some_dir_to_store_src_code>
-[optional LSQFIT-GUI interface]
-git clone https://github.com/ckoerber/lsqfit-gui
-pushd lsqfit-gui
-pip install [--user] -e .
-popd
-```
-Ignore the "ERROR" raised by the install - it works, but still throws an error.  We are working to understand how to fix that message.
-
 ### Main Code
 ```
 git clone https://github.com/callat-qcd/c51_corr_analysis
@@ -53,8 +38,25 @@ which fit_corr
 ```
 and if this returns a binary, the installation has worked.
 
+### Updating
+If you want to pull updates, follow the simple 2-steps
+```
+cd <path_to_repo>/c51_corr_analysis
+git pull
+pip install -e .
+```
 
-
+### Optional LSQFIT-GUI
+One can install the OPTIONAL `lsqfit-gui` utility that is very convenient for estimating priors.
+```
+cd <some_dir_to_store_src_code>
+[optional LSQFIT-GUI interface]
+git clone https://github.com/ckoerber/lsqfit-gui
+pushd lsqfit-gui
+pip install [--user] -e .
+popd
+```
+Ignore the "ERROR" raised by the install - it works, but still throws an error.  We are working to understand how to fix that message.
 
 ## Example Usage
 
