@@ -252,8 +252,9 @@ def effective_mass(gvdata, mtype='exp', tau=1):
 
 
 def plot_eff(ax, dsets, key, xlim, mtype='exp', tau=1, colors=None, offset=0, denom_key=None):
-    lst = [k for k in dsets if key in k]
+    lst = [k for k in dsets if key == k.split('_')[0]]
     for k in lst:
+        print(key, k)
         data = dsets[k]
         if denom_key:
             for d in denom_key:
