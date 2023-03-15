@@ -165,18 +165,19 @@ def run_bootstrap(args, fit, fp, data_cfg, x_fit, svdcut=None):
             ''' all gvar's created in this switch are destroyed at restore_gvar
                 [they are out of scope] '''
             gv.switch_gvar()
-            bs_data = dict()
-            bs_gv_ = dict()
-            for k in fit.y:
-                if any(['mres' in k for k in bs_data]):
-                    bs_tmp = {k:v for (k,v) in bs_data.items() if 'mres' not in k}
-                    for k in [key for key in bs_data if 'mres' in key]:
-                        mres = k.split('_')[0]
-                        if mres not in bs_tmp:
-                            bs_tmp[mres] = bs_data[mres+'_MP'] / bs_data[mres+'_PP']
-                    bs_gv_ = bs_tmp
 
-            bs_gv = gv.dataset.avg_data(bs_gv_)
+            bs_data = dict()
+            for k in fit.y:
+                bs_data[k] = data_cfg[k][bs_list[bs]]
+            bs_gv = gv.dataset.avg_data(bs_data)
+
+            if any(['mres' in k for k in bs_gv]):
+                bs_tmp = {k:v for (k,v) in bs_gv.items() if 'mres' not in k}
+                for k in [key for key in bs_gv if 'mres' in key]:
+                    mres = k.split('_')[0]
+                    if mres not in bs_tmp:
+                        bs_tmp[mres] = bs_gv[mres+'_MP'] / bs_gv[mres+'_PP']
+                bs_gv = bs_tmp
 
             y_bs = {k: v[x_fit[k]['t_range']]
                     for (k, v) in bs_gv.items() if k in fit.y}
