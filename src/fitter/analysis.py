@@ -168,8 +168,17 @@ def run_bootstrap(args, fit, fp, data_cfg, x_fit, svdcut=None):
 
             bs_data = dict()
             for k in fit.y:
-                bs_data[k] = data_cfg[k][bs_list[bs]]
+                if 'mres' in k:
+                    bs_data[k+'_MP'] = data_cfg[k+'_MP'][bs_list[bs]]
+                    bs_data[k+'_PP'] = data_cfg[k+'_PP'][bs_list[bs]]
+                else:
+                    bs_data[k] = data_cfg[k][bs_list[bs]]
             bs_gv = gv.dataset.avg_data(bs_data)
+            if any(['mres' in k for k in bs_gv]):
+                mres_lst = [k.split('_')[0] for k in bs_gv if 'mres' in k]
+                mres_lst = list(set(mres_lst))
+                for k in mres_lst:
+                    bs_gv[k] = bs_gv[k+'_MP'] / bs_gv[k+'_PP']
 
             if any(['mres' in k for k in bs_gv]):
                 bs_tmp = {k:v for (k,v) in bs_gv.items() if 'mres' not in k}
