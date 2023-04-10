@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import gvar as gv
 import os
 import copy
 # our libs
@@ -242,6 +243,9 @@ def effective_mass(gvdata, mtype='exp', tau=1):
         mtype  = type of effective mass: exp, cosh, cosh_costant, ...
         tau    = shift variable for making effective mass
     '''
+    if np.any(gvdata == 0):
+        to_nan = np.where(gvdata == 0)
+        gvdata[to_nan] = gv.gvar(np.NaN, 0)
     if 'exp' in mtype:
         meff = 1./tau * np.log(gvdata / np.roll(gvdata, -tau))
     elif mtype == 'cosh':

@@ -138,6 +138,7 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
                         snks = corr_dict[corr]['snks'][j]
                     for i, snk in enumerate(snks):
                         with h5.open_file(f5_files[0], 'r') as f5:
+                            dsets = corr_dict[corr]['dsets']
                             d_set = dsets[0] % {'SNK': snk, 'SRC': src}
                             data = np.zeros_like(f5.get_node('/'+d_set).read())
                             for i_d, dset in enumerate(dsets):
@@ -147,8 +148,11 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
                                 else:
                                     phase = 1
                                 d_tmp = f5.get_node('/'+d_set).read()
-                                data += weights[i_d] * time_reverse(
-                                    d_tmp, reverse=t_reverse[i_d], phase=phase)
+                                if t_reverse[i_d]:
+                                    data += weights[i_d] * time_reverse(
+                                        d_tmp, reverse=t_reverse[i_d], phase=phase)
+                                else:
+                                    data += weights[i_d] * d_tmp
 
                         # if we have more than 1 data file
                         if len(f5_files) > 1:

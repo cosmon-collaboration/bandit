@@ -137,6 +137,7 @@ def main():
             has_svd = False
 
     # if user passes a base plot name
+    plot_name = ''
     if 'plot_name' in dir(fp):
         plot_name = fp.plot_name
     if args.plot_name:
