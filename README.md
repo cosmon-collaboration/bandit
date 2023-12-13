@@ -83,7 +83,7 @@ fit_corr input_file/a09m310_test.py --eff --fit --gui
 # Copyright Notice
 
 
-Bayesian ANalysis of Data in Imaginary Time (BANDIT) Suite
+Bayesian ANalysis of Data in Imaginary Time (BANDIT) analysis code.
 Copyright (c) 2022, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
 approvals from the U.S. Dept. of Energy). All rights reserved.
