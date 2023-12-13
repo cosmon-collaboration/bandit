@@ -1,5 +1,4 @@
-# c51_corr_analysis
-The Collaboration 51 Correlation Function Analysis Suite.
+# BANDIT (Bayesian ANalysis of Data in Imaginary Time)
 
 This fitter is designed to analyze correlation functions generated from lattice QFT calculations.  This fitting package is currently undergoing rapid development, and there is no promise of backwards compatibility yet.  Version numbers will be used to support reproducibility.
 
@@ -84,7 +83,7 @@ fit_corr input_file/a09m310_test.py --eff --fit --gui
 # Copyright Notice
 
 
-Collaboration 51 Correlation Function Analysis Suite (c51_corr_analysis)
+Bayesian ANalysis of Data in Imaginary Time (BANDIT) Suite
 Copyright (c) 2022, The Regents of the University of California, through
 Lawrence Berkeley National Laboratory (subject to receipt of any required
 approvals from the U.S. Dept. of Energy). All rights reserved.
