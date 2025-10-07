@@ -36,6 +36,7 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
         f5_files = f5_file
     # check for re-weighting
     if rw:
+        print('reweighting')
         rw_file, rw_path = rw
         if not isinstance(rw_file, list):
             rw_files = [rw_file]
@@ -51,7 +52,7 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
                 reweight = np.concatenate(
                     (reweight, rw5.get_node('/'+rw_path).read()), axis=0)
         # normalize rw factors
-        reweight = reweight / reweight.sum()
+        reweight = reweight / reweight.mean()
 
     # collect correlators
     for corr in corr_dict:
@@ -185,6 +186,7 @@ def load_h5(f5_file, corr_dict, return_gv=True, rw=None, bl=1, uncorr_corrs=Fals
 
     # re-weight?
     if rw:
+        print(reweight.mean())
         for k in corrs:
             corrs[k] = corrs[k] * reweight[:, None]
 

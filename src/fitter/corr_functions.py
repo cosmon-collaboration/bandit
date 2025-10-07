@@ -104,10 +104,14 @@ class CorrFunction:
         t = x['t_range']
         T = x['T']
         for n in range(x['n_state']):
-            z_src = p["%s_z%s_%d" % (x['state'], x['src'], n)]
-            z_snk = p["%s_z%s_%d" % (x['state'], x['snk'], n)]
             E_n = self.En(x, p, n)
-            r += z_snk * z_src * (np.exp(-E_n*t) + np.exp(-E_n*(T-t)))
+            if x['ztype'] == 'z_snk z_src':
+                z_src = p["%s_z%s_%d" % (x['state'], x['src'], n)]
+                z_snk = p["%s_z%s_%d" % (x['state'], x['snk'], n)]
+                r    += z_snk * z_src * (np.exp(-E_n*t) + np.exp(-E_n*(T-t)))
+            elif x['ztype'] == 'A_snk,src':
+                A  = p['%s_z%s%s_%d' % (x['state'], x['snk'], x['src'], n)]
+                r += A * (np.exp(-E_n*t) + np.exp(-E_n*(T-t)))
         return r
 
     def mres(self, x, p):

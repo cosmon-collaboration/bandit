@@ -46,10 +46,10 @@ def run_stability(args, xp, x, y, gv_data, data_cfg, plot_name):
                 if state not in k:
                     p_tmp.pop(k)
 
+            has_svd = False
             if args.svd_test:
                 has_svd = True
                 svd_test, svdcut = ld.svd_diagnose(y_tmp, data_cfg, x_tmp)
-                has_svd = True
 
             if ti == tmin[0]:
                 print([k for k in y_tmp])
@@ -156,7 +156,7 @@ def run_bootstrap(args, fit, fp, data_cfg, x_fit, svdcut=None):
         # set up posterior lists of bs results
         post_bs = dict()
         for k in fit.p:
-            post_bs[k] = []
+            post_bs[k] = [fit.p[k].mean] # add boot0 as first entry
 
         fit_str = []
 

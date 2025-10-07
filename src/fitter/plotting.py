@@ -275,7 +275,7 @@ def plot_eff(ax, dsets, key, xlim, mtype='exp', tau=1, colors=None, offset=0, de
             ax.errorbar(x, m, yerr=dm, linestyle='None', marker='o',
                         mfc='None', label=label)
         meff = np.array(m)[xlim]
-        ax.set_ylim(0.5*meff.mean(), 1.5*meff.mean())
+        ax.set_ylim(0.5*np.nanmean(meff), 1.5*np.nanmean(meff))
 
 def plot_mres(ax, dsets, key, mtype='exp', tau=1, colors=None, offset=0, denom_key=None):
     lst = [k for k in dsets if key in k]
@@ -298,6 +298,8 @@ def plot_zeff(ax, dsets, key, xlim, ztype='A_snk,src', snksrc=None, mtype='exp',
     if ztype == 'A_snk,src':
         for k in lst:
             lbl = k.split('_')[-1]
+            snk = lbl[0]
+            src = lbl[1]
             eff = effective_mass(dsets[k], mtype=mtype, tau=tau)
             t   = np.arange(eff.shape[0])
             if 'exp' in mtype:
@@ -308,10 +310,10 @@ def plot_zeff(ax, dsets, key, xlim, ztype='A_snk,src', snksrc=None, mtype='exp',
             z  = [k.mean for k in zeff]
             dz = [k.sdev for k in zeff]
             if colors is not None:
-                ax[0].errorbar(t, z, yerr=dz, linestyle='None', marker='o',
+                ax[snk+'-'+src].errorbar(t, z, yerr=dz, linestyle='None', marker='o',
                             color=colors[lbl], mfc='None', label=lbl)
             else:
-                ax[0].errorbar(t, z, yerr=dz, linestyle='None', marker='o',
+                ax[snk+'-'+src].errorbar(t, z, yerr=dz, linestyle='None', marker='o',
                             mfc='None', label=lbl)
     elif ztype == 'z_snk z_src':
         for j_src, src in enumerate(snksrc['srcs']):
@@ -359,7 +361,7 @@ def plot_zeff(ax, dsets, key, xlim, ztype='A_snk,src', snksrc=None, mtype='exp',
                     ax[snk+'-'+src].errorbar(t, z, yerr=dz, linestyle='None', marker='o',
                                 mfc='None', label=lbl)
                 zeff = np.array(z)[xlim]
-                ax[snk+'-'+src].set_ylim(0.5*zeff.mean(), 1.5*zeff.mean())
+                ax[snk+'-'+src].set_ylim(0.5*np.nanmean(zeff), 1.5*np.nanmean(zeff))
 
 def plot_stability(fits, tmin, n_states, tn_opt, state,
                    ylim=None, diff=False, save=True, n_plot=0, scale=None, plot_name=''):
@@ -503,8 +505,8 @@ def plot_stability(fits, tmin, n_states, tn_opt, state,
         ax_e0.axhspan(e0_opt.mean-e0_opt.sdev, e0_opt.mean
                       + e0_opt.sdev, color=colors[tn_opt[1]], alpha=.2)
     ax_e0.set_xticks(tmin)
-    if ylim is not None:
-        ax_e0.set_ylim(ylim)
+    #if ylim is not None:
+    #    ax_e0.set_ylim(ylim)
 
     ax_Q.set_xticks(tmin)
     ax_Q.set_yticks([0.1, 0.75])
