@@ -307,8 +307,11 @@ def plot_zeff(ax, dsets, key, xlim, ztype='A_snk,src', snksrc=None, mtype='exp',
             elif mtype == 'cosh':
                 zeff = dsets[k][:-1] / \
                     (np.exp(-eff * t) + np.exp(-eff * (len(t)-t)))
-            z  = [k.mean for k in zeff]
-            dz = [k.sdev for k in zeff]
+            z  = np.array([k.mean for k in zeff])
+            dz = np.array([k.sdev for k in zeff])
+            if any(np.where(dz<0)):
+                neg = np.where(dz<0)
+                dz[neg] = np.nan
             if colors is not None:
                 ax[snk+'-'+src].errorbar(t, z, yerr=dz, linestyle='None', marker='o',
                             color=colors[lbl], mfc='None', label=lbl)
